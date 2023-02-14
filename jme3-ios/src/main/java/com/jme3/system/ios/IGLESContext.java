@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2023 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,18 +31,18 @@
  */
 package com.jme3.system.ios;
 
-import com.jme3.input.*;
+import com.jme3.input.JoyInput;
+import com.jme3.input.KeyInput;
+import com.jme3.input.MouseInput;
+import com.jme3.input.TouchInput;
 import com.jme3.input.dummy.DummyKeyInput;
 import com.jme3.input.dummy.DummyMouseInput;
-import com.jme3.system.*;
 import com.jme3.input.ios.IosInputHandler;
 import com.jme3.opencl.Context;
 import com.jme3.renderer.ios.IosGL;
-import com.jme3.renderer.opengl.GL;
-import com.jme3.renderer.opengl.GLDebugES;
-import com.jme3.renderer.opengl.GLExt;
-import com.jme3.renderer.opengl.GLFbo;
-import com.jme3.renderer.opengl.GLRenderer;
+import com.jme3.renderer.opengl.*;
+import com.jme3.system.*;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -81,6 +81,17 @@ public class IGLESContext implements JmeContext {
         if (input != null) {
             input.loadSettings(settings);
         }
+    }
+
+    /**
+     * Accesses the listener that receives events related to this context.
+     *
+     * @return the pre-existing instance
+     */
+    @Override
+    public SystemListener getSystemListener() {
+        logger.log(Level.FINE, "IGLESContext getSystemListener");
+        return listener;
     }
 
     @Override
@@ -138,7 +149,7 @@ public class IGLESContext implements JmeContext {
     @Override
     public boolean isCreated() {
         logger.log(Level.FINE, "IGLESContext isCreated");
-		return created.get();
+        return created.get();
     }
 
     @Override
@@ -155,16 +166,13 @@ public class IGLESContext implements JmeContext {
     @Override
     public void create(boolean waitFor) {
         logger.log(Level.FINE, "IGLESContext create");
-        
-        GL gl = new IosGL();
-        GLExt glext = (GLExt) gl;
+        IosGL gl = new IosGL();
 
-//        if (settings.getBoolean("GraphicsDebug")) {
-            gl = new GLDebugES(gl, glext, (GLFbo) glext);
-            glext = (GLExt) gl;
-//        }
+        if (settings.getBoolean("GraphicsDebug")) {
+            gl = (IosGL)GLDebug.createProxy(gl, gl, GL.class, GLExt.class, GLFbo.class);
+        }
 
-        renderer = new GLRenderer(gl, glext, (GLFbo) glext);
+        renderer = new GLRenderer(gl, gl, gl);
         renderer.initialize();
         
         input = new IosInputHandler();
@@ -194,8 +202,8 @@ public class IGLESContext implements JmeContext {
     @Override
     public void destroy(boolean waitFor) {
         logger.log(Level.FINE, "IGLESContext destroy");
-		listener.destroy();
-		needClose.set(true);
+        listener.destroy();
+        needClose.set(true);
         if (waitFor) {
             //waitFor(false);
         }
@@ -218,5 +226,45 @@ public class IGLESContext implements JmeContext {
     public Context getOpenCLContext() {
         logger.warning("OpenCL not yet supported on this platform");
         return null;
+    }
+
+    /**
+     * Returns the height of the framebuffer.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getFramebufferHeight() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    /**
+     * Returns the width of the framebuffer.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getFramebufferWidth() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    /**
+     * Returns the screen X coordinate of the left edge of the content area.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getWindowXPosition() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    /**
+     * Returns the screen Y coordinate of the top edge of the content area.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getWindowYPosition() {
+        throw new UnsupportedOperationException("not implemented yet");
     }
 }

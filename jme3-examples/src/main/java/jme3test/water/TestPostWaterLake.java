@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,7 @@ package jme3test.water;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.HttpZipLocator;
 import com.jme3.asset.plugins.ZipLocator;
+import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
@@ -49,16 +50,18 @@ public class TestPostWaterLake extends SimpleApplication {
 
     private static boolean useHttp = false;
 
-    public static void main(String[] args) {
-        File file = new File("wildhouse.zip");
-        if (!file.exists()) {
-            useHttp = true;
-        }     
+    public static void main(String[] args) {         
         TestPostWaterLake app = new TestPostWaterLake();
         app.start();
     }
 
+    @Override
     public void simpleInitApp() {
+        File file = new File("wildhouse.zip");
+        if (!file.exists()) {
+            useHttp = true;
+        }
+        
         this.flyCam.setMoveSpeed(10);
         cam.setLocation(new Vector3f(-27.0f, 1.0f, 75.0f));
       //  cam.setRotation(new Quaternion(0.03f, 0.9f, 0f, 0.4f));
@@ -67,12 +70,7 @@ public class TestPostWaterLake extends SimpleApplication {
         rootNode.attachChild(SkyFactory.createSky(assetManager, 
                 "Textures/Sky/Bright/BrightSky.dds", 
                 SkyFactory.EnvMapType.CubeMap));
-
-        File file = new File("wildhouse.zip");
         
-        if (file.exists()) {
-            useHttp = false;
-        }
         // create the geometry and attach it
         // load the level from zip or http zip
         if (useHttp) {
@@ -112,6 +110,7 @@ public class TestPostWaterLake extends SimpleApplication {
 
         inputManager.addListener(new ActionListener() {
 
+            @Override
             public void onAction(String name, boolean isPressed, float tpf) {
               if(isPressed){
                   if(water.isUseHQShoreline()){
@@ -123,6 +122,6 @@ public class TestPostWaterLake extends SimpleApplication {
             }
         }, "HQ");
 
-        inputManager.addMapping("HQ", new KeyTrigger(keyInput.KEY_SPACE));
+        inputManager.addMapping("HQ", new KeyTrigger(KeyInput.KEY_SPACE));
     }
 }

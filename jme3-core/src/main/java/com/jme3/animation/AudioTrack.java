@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,12 +44,12 @@ import java.util.logging.Logger;
 
 /**
  * AudioTrack is a track to add to an existing animation, to play a sound during
- * an animations for example : gun shot, foot step, shout, etc...
+ * an animations for example : gunshot, footstep, shout, etcetera.
  *
- * usage is
+ * Typical usage is:
  * <pre>
  * AnimControl control model.getControl(AnimControl.class);
- * AudioTrack track = new AudioTrack(existionAudioNode, control.getAnim("TheAnim").getLength());
+ * AudioTrack track = new AudioTrack(existingAudioNode, control.getAnim("TheAnim").getLength());
  * control.getAnim("TheAnim").addTrack(track);
  * </pre>
  *
@@ -73,18 +73,20 @@ public class AudioTrack implements ClonableTrack {
     //Animation listener to stop the sound when the animation ends or is changed
     private class OnEndListener implements AnimEventListener {
 
+        @Override
         public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
             stop();
         }
 
+        @Override
         public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
         }
     }
 
     /**
-     * default constructor for serialization only
+     * constructor for serialization only
      */
-    public AudioTrack() {
+    protected AudioTrack() {
     }
 
     /**
@@ -120,6 +122,7 @@ public class AudioTrack implements ClonableTrack {
      * @see Track#setTime(float, float, com.jme3.animation.AnimControl,
      * com.jme3.animation.AnimChannel, com.jme3.util.TempVars)
      */
+    @Override
     public void setTime(float time, float weight, AnimControl control, AnimChannel channel, TempVars vars) {
 
         if (time >= length) {
@@ -146,22 +149,23 @@ public class AudioTrack implements ClonableTrack {
      *
      * @return length of the track
      */
+    @Override
     public float getLength() {
         return length;
     }
 
     @Override
     public float[] getKeyFrameTimes() {
-        return new float[] { startOffset };
+        return new float[]{startOffset};
     }
-    
+
     /**
      * Clone this track
      *
      * @return a new track
      */
     @Override
-    public Track clone() {
+    public AudioTrack clone() {
         return new AudioTrack(audio, length, startOffset);
     }
 
@@ -193,27 +197,25 @@ public class AudioTrack implements ClonableTrack {
         return audioTrack;
     }
 
-    @Override   
+    @Override
     public Object jmeClone() {
         try {
             return super.clone();
-        } catch( CloneNotSupportedException e ) {
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning", e);
         }
-    }     
+    }
 
-
-    @Override   
-    public void cloneFields( Cloner cloner, Object original ) {
+    @Override
+    public void cloneFields(Cloner cloner, Object original) {
         // Duplicating the old cloned state from cloneForSpatial()
         this.initialized = false;
         this.started = false;
-        this.played = false; 
+        this.played = false;
         this.audio = cloner.clone(audio);
     }
-         
-         
-    /**    
+
+    /**
      * recursive function responsible for finding the newly cloned AudioNode
      *
      * @param spat
@@ -255,6 +257,7 @@ public class AudioTrack implements ClonableTrack {
         data.addTrack(audioTrack);
     }
 
+    @Override
     public void cleanUp() {
         TrackInfo t = (TrackInfo) audio.getUserData("TrackInfo");
         t.getTracks().remove(this);
@@ -274,7 +277,7 @@ public class AudioTrack implements ClonableTrack {
     /**
      * sets the audio node to be used for this track
      *
-     * @param audio
+     * @param audio the desired AudioNode (alias created)
      */
     public void setAudio(AudioNode audio) {
         if (this.audio != null) {
@@ -296,7 +299,7 @@ public class AudioTrack implements ClonableTrack {
     /**
      * set the start offset of the track
      *
-     * @param startOffset
+     * @param startOffset the desired start offset
      */
     public void setStartOffset(float startOffset) {
         this.startOffset = startOffset;
@@ -308,6 +311,7 @@ public class AudioTrack implements ClonableTrack {
      * @param ex exporter
      * @throws IOException exception
      */
+    @Override
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule out = ex.getCapsule(this);
         out.write(audio, "audio", null);
@@ -321,6 +325,7 @@ public class AudioTrack implements ClonableTrack {
      * @param im importer
      * @throws IOException Exception
      */
+    @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule in = im.getCapsule(this);
         audio = (AudioNode) in.readSavable("audio", null);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,7 +60,7 @@ public interface TechniqueDefLogic {
      * Determine the shader to use for the given geometry / material combination.
      * 
      * @param assetManager The asset manager to use for loading shader source code,
-     * shader nodes, and and lookup textures.
+     * shader nodes, and lookup textures.
      * @param renderManager The render manager for which rendering is to be performed.
      * @param rendererCaps Renderer capabilities. The returned shader must
      * support these capabilities.
@@ -90,6 +90,7 @@ public interface TechniqueDefLogic {
      * {@link #makeCurrent(com.jme3.asset.AssetManager, com.jme3.renderer.RenderManager, java.util.EnumSet, com.jme3.light.LightList, com.jme3.shader.DefineList)}.
      * @param geometry The geometry to render
      * @param lights Lights which influence the geometry.
+     * @param lastTexUnit the index of the most recently used texture unit
      */
     public void render(RenderManager renderManager, Shader shader, Geometry geometry, LightList lights, int lastTexUnit);
 }

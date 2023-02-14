@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2023 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,26 +35,36 @@ package jme3test;
 import com.jme3.app.LegacyApplication;
 import com.jme3.app.SimpleApplication;
 import com.jme3.system.JmeContext;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.HeadlessException;
+import java.awt.Toolkit;
 import java.awt.event.*;
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLDecoder;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Enumeration;
-import java.util.Vector;
-import java.util.jar.JarFile;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
@@ -67,7 +77,7 @@ import javax.swing.event.ListSelectionListener;
  * Class with a main method that displays a dialog to choose any jME demo to be
  * started.
  */
-public class TestChooser extends JDialog {
+public class TestChooser extends JFrame {
     private static final Logger logger = Logger.getLogger(TestChooser.class
             .getName());
 
@@ -76,18 +86,29 @@ public class TestChooser extends JDialog {
     /**
      * Only accessed from EDT
      */
-    private java.util.List selectedClass = null;
+    private List<Class<?>> selectedClass = null;
     private boolean showSetting = true;
+
+    private ExecutorService executorService;
 
     /**
      * Constructs a new TestChooser that is initially invisible.
      */
     public TestChooser() throws HeadlessException {
-        super((JFrame) null, "TestChooser");
-        /** This listener ends application when window is closed (x button on top right corner of test chooser).
+        super("TestChooser");
+        /* This listener ends application when window is closed (x button on top right corner of test chooser).
          * @see issue#85 https://github.com/jMonkeyEngine/jmonkeyengine/issues/85
          */
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+    }
+
+    @Override
+    public void dispose() {
+        if (executorService != null) {
+            executorService.shutdown();
+        }
+
+        super.dispose();
     }
 
     /**
@@ -96,62 +117,51 @@ public class TestChooser extends JDialog {
      * @return classes vector, list of all the classes in a given package (must
      *         be found in classpath).
      */
-    protected Vector<Class> find(String pckgname, boolean recursive,
-            Vector<Class> classes) {
-        URL url;
+    private void find(String packageName, boolean recursive,
+            Set<Class<?>> classes) {
 
         // Translate the package name into an absolute path
-        String name = pckgname;
+        String name = packageName;
         if (!name.startsWith("/")) {
             name = "/" + name;
         }
         name = name.replace('.', '/');
 
         // Get a File object for the package
-        // URL url = UPBClassLoader.get().getResource(name);
-        url = this.getClass().getResource(name);
-        // URL url = ClassLoader.getSystemClassLoader().getResource(name);
-        pckgname = pckgname + ".";
-
-        File directory;
+        packageName = packageName + ".";
+        URI uri;
+        FileSystem fileSystem = null;
         try {
-            directory = new File(URLDecoder.decode(url.getFile(), "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e); // should never happen
+            uri = this.getClass().getResource(name).toURI();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Failed to load demo classes.", e);
         }
 
-        if (directory.exists()) {
-            logger.fine("Searching for Demo classes in \""
-                    + directory.getName() + "\".");
-            addAllFilesInDirectory(directory, classes, pckgname, recursive);
-        } else {
+        // Special case if we are running from inside a JAR
+        if ("jar".equalsIgnoreCase(uri.getScheme())) {
             try {
-                // It does not work with the filesystem: we must
-                // be in the case of a package contained in a jar file.
-                logger.fine("Searching for Demo classes in \"" + url + "\".");
-                URLConnection urlConnection = url.openConnection();
-                if (urlConnection instanceof JarURLConnection) {
-                    JarURLConnection conn = (JarURLConnection) urlConnection;
-
-                    JarFile jfile = conn.getJarFile();
-                    Enumeration e = jfile.entries();
-                    while (e.hasMoreElements()) {
-                        ZipEntry entry = (ZipEntry) e.nextElement();
-                        Class result = load(entry.getName());
-                        if (result != null && !classes.contains(result)) {
-                            classes.add(result);
-                        }
-                    }
-                }
+                fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
             } catch (IOException e) {
-                logger.logp(Level.SEVERE, this.getClass().toString(),
-                        "find(pckgname, recursive, classes)", "Exception", e);
-            } catch (Exception e) {
-                logger.logp(Level.SEVERE, this.getClass().toString(),
-                        "find(pckgname, recursive, classes)", "Exception", e);
+                throw new RuntimeException("Failed to load demo classes from JAR.", e);
             }
         }
-        return classes;
+
+        try {
+            Path directory = Paths.get(uri);
+            logger.log(Level.FINE, "Searching for Demo classes in \"{0}\".", directory.getFileName().toString());
+            addAllFilesInDirectory(directory, classes, packageName, recursive);
+        } catch (Exception e) {
+            logger.logp(Level.SEVERE, this.getClass().toString(),
+                    "find(pckgname, recursive, classes)", "Exception", e);
+        } finally {
+            if (fileSystem != null) {
+                try {
+                    fileSystem.close();
+                } catch (IOException e) {
+                    logger.log(Level.WARNING, "Failed to close JAR.", e);
+                }
+            }
+        }
     }
 
     /**
@@ -163,36 +173,25 @@ public class TestChooser extends JDialog {
      *         not contain a main method
      */
     private Class load(String name) {
-        if (name.endsWith(".class")
-         && name.indexOf("Test") >= 0
-         && name.indexOf('$') < 0) {
-            String classname = name.substring(0, name.length()
-                    - ".class".length());
+        String classname = name.substring(0, name.length()
+                - ".class".length());
 
-            if (classname.startsWith("/")) {
-                classname = classname.substring(1);
-            }
-            classname = classname.replace('/', '.');
+        if (classname.startsWith("/")) {
+            classname = classname.substring(1);
+        }
+        classname = classname.replace('/', '.');
 
-            try {
-                final Class<?> cls = Class.forName(classname);
-                cls.getMethod("main", new Class[] { String[].class });
-                if (!getClass().equals(cls)) {
-                    return cls;
-                }
-            } catch (NoClassDefFoundError e) {
-                // class has unresolved dependencies
-                return null;
-            } catch (ClassNotFoundException e) {
-                // class not in classpath
-                return null;
-            } catch (NoSuchMethodException e) {
-                // class does not have a main method
-                return null;
-            } catch (UnsupportedClassVersionError e){
-                // unsupported version
-                return null;
+        try {
+            final Class<?> cls = Class.forName(classname);
+            cls.getMethod("main", new Class[]{String[].class});
+            if (!getClass().equals(cls)) {
+                return cls;
             }
+        } catch (NoClassDefFoundError // class has unresolved dependencies
+                | ClassNotFoundException // class not in classpath
+                | NoSuchMethodException // class does not have a main method
+                | UnsupportedClassVersionError e) { // unsupported version
+            return null;
         }
         return null;
     }
@@ -205,29 +204,36 @@ public class TestChooser extends JDialog {
      * @param allClasses
      *            add loaded classes to this collection
      * @param packageName
-     *            current package name for the diven directory
+     *            current package name for the given directory
      * @param recursive
-     *            true to descent into subdirectories
+     *            true to descend into subdirectories
      */
-    private void addAllFilesInDirectory(File directory,
-            Collection<Class> allClasses, String packageName, boolean recursive) {
+    private void addAllFilesInDirectory(final Path directory,
+            final Set<Class<?>> allClasses, final String packageName, final boolean recursive) {
         // Get the list of the files contained in the package
-        File[] files = directory.listFiles(getFileFilter());
-        if (files != null) {
-            for (int i = 0; i < files.length; i++) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory, getFileFilter())) {
+            for (Path file : stream) {
+
                 // we are only interested in .class files
-                if (files[i].isDirectory()) {
+                if (Files.isDirectory(file)) {
                     if (recursive) {
-                        addAllFilesInDirectory(files[i], allClasses,
-                                packageName + files[i].getName() + ".", true);
+                        String dirName = String.valueOf(file.getFileName());
+                        if (dirName.endsWith("/")) {
+                            // Seems java 8 adds "/" at the end of directory name when
+                            // reading from jar filesystem. We need to remove it. - Ali-RS 2023-1-5
+                            dirName = dirName.substring(0, dirName.length() - 1);
+                        }
+                        addAllFilesInDirectory(file, allClasses, packageName + dirName + ".", true);
                     }
                 } else {
-                    Class result = load(packageName + files[i].getName());
+                    Class<?> result = load(packageName + file.getFileName());
                     if (result != null && !allClasses.contains(result)) {
                         allClasses.add(result);
                     }
                 }
             }
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "Could not search the folder!", ex);
         }
     }
 
@@ -235,75 +241,82 @@ public class TestChooser extends JDialog {
      * @return FileFilter for searching class files (no inner classes, only
      *         those with "Test" in the name)
      */
-    private FileFilter getFileFilter() {
-        return new FileFilter() {
-            public boolean accept(File pathname) {
-                return (pathname.isDirectory() && !pathname.getName().startsWith("."))
-                        || (pathname.getName().endsWith(".class")
-                            && (pathname.getName().indexOf("Test") >= 0)
-                            && pathname.getName().indexOf('$') < 0);
+    private static DirectoryStream.Filter<Path> getFileFilter() {
+        return new DirectoryStream.Filter<Path>() {
+
+            @Override
+            public boolean accept(Path entry) throws IOException {
+                String fileName = entry.getFileName().toString();
+                return (fileName.endsWith(".class")
+                        && (fileName.contains("Test"))
+                        && !fileName.contains("$"))
+                        || (!fileName.startsWith(".") && Files.isDirectory(entry));
             }
         };
     }
 
-    private void startApp(final java.util.List appClass){
-        if (appClass == null){
+    private void startApp(final List<Class<?>> appClass) {
+        if (appClass == null || appClass.isEmpty()) {
             JOptionPane.showMessageDialog(rootPane,
                                           "Please select a test from the list",
-                                          "Error", 
+                                          "Error",
                                           JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-            new Thread(new Runnable(){
-                public void run(){
-                    for (int i = 0; i < appClass.size(); i++) {
-                	    Class<?> clazz = (Class)appClass.get(i);
-                		try {
-                			if (LegacyApplication.class.isAssignableFrom(clazz)) {
-                    			Object app = clazz.newInstance();
-                			    if (app instanceof SimpleApplication) {
-                			        final Method settingMethod = clazz.getMethod("setShowSettings", boolean.class);
-                			        settingMethod.invoke(app, showSetting);
-                			    }
-                			    final Method mainMethod = clazz.getMethod("start");
-                			    mainMethod.invoke(app);
-                			    Field contextField = LegacyApplication.class.getDeclaredField("context");
-                			    contextField.setAccessible(true);
-                			    JmeContext context = null; 
-                			    while (context == null) {
-                			        context = (JmeContext) contextField.get(app);
-                			        Thread.sleep(100);
-                			    }
-                			    while (!context.isCreated()) {
-                			        Thread.sleep(100);
-                			    }
-                			    while (context.isCreated()) {
-                			        Thread.sleep(100);
-                			    }
-                			} else {
-                                final Method mainMethod = clazz.getMethod("main", (new String[0]).getClass());
-                                mainMethod.invoke(clazz, new Object[]{new String[0]});
-                			}
-                			// wait for destroy
-                			System.gc();
-                		} catch (IllegalAccessException ex) {
-                			logger.log(Level.SEVERE, "Cannot access constructor: "+clazz.getName(), ex);
-                		} catch (IllegalArgumentException ex) {
-                			logger.log(Level.SEVERE, "main() had illegal argument: "+clazz.getName(), ex);
-                		} catch (InvocationTargetException ex) {
-                			logger.log(Level.SEVERE, "main() method had exception: "+clazz.getName(), ex);
-                		} catch (InstantiationException ex) {
-                			logger.log(Level.SEVERE, "Failed to create app: "+clazz.getName(), ex);
-                		} catch (NoSuchMethodException ex){
-                			logger.log(Level.SEVERE, "Test class doesn't have main method: "+clazz.getName(), ex);
-                		} catch (Exception ex) {
-                		    logger.log(Level.SEVERE, "Cannot start test: "+clazz.getName(), ex);
-                            ex.printStackTrace();
+        executorService.submit(getAppRunner(appClass));
+    }
+
+    private Runnable getAppRunner(final List<Class<?>> appClass) {
+        return new Runnable() {
+            @Override
+            public void run() {
+                for (Class<?> clazz : appClass) {
+                    try {
+                        if (LegacyApplication.class.isAssignableFrom(clazz)) {
+                            Object app = clazz.getDeclaredConstructor().newInstance();
+                            if (app instanceof SimpleApplication) {
+                                final Method settingMethod = clazz.getMethod("setShowSettings", boolean.class);
+                                settingMethod.invoke(app, showSetting);
+                            }
+                            final Method mainMethod = clazz.getMethod("start");
+                            mainMethod.invoke(app);
+                            Field contextField = LegacyApplication.class.getDeclaredField("context");
+                            contextField.setAccessible(true);
+                            JmeContext context = null;
+                            while (context == null) {
+                                context = (JmeContext) contextField.get(app);
+                                Thread.sleep(100);
+                            }
+                            while (!context.isCreated()) {
+                                Thread.sleep(100);
+                            }
+                            while (context.isCreated()) {
+                                Thread.sleep(100);
+                            }
+                        } else {
+                            final Method mainMethod = clazz.getMethod("main", (new String[0]).getClass());
+                            mainMethod.invoke(clazz, new Object[]{new String[0]});
                         }
-                	}
+                        // wait for destroy
+                        System.gc();
+                    } catch (IllegalAccessException ex) {
+                        logger.log(Level.SEVERE, "Cannot access constructor: " + clazz.getName(), ex);
+                    } catch (IllegalArgumentException ex) {
+                        logger.log(Level.SEVERE, "main() had illegal argument: " + clazz.getName(), ex);
+                    } catch (InvocationTargetException ex) {
+                        logger.log(Level.SEVERE, "main() method had exception: " + clazz.getName(), ex);
+                    } catch (InstantiationException ex) {
+                        logger.log(Level.SEVERE, "Failed to create app: " + clazz.getName(), ex);
+                    } catch (NoSuchMethodException ex) {
+                        logger.log(Level.SEVERE, "Test class doesn't have main method: " + clazz.getName(), ex);
+                    } catch (Exception ex) {
+                        logger.log(Level.SEVERE, "Cannot start test: " + clazz.getName(), ex);
+                        ex.printStackTrace();
+                    }
                 }
-            }).start();
+            }
+        };
     }
 
     /**
@@ -312,7 +325,7 @@ public class TestChooser extends JDialog {
      * @param classes
      *            what Classes to show in the list box
      */
-    private void setup(Vector<Class> classes) {
+    private void setup(Collection<Class<?>> classes) {
         final JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BorderLayout());
         getContentPane().setLayout(new BorderLayout());
@@ -321,8 +334,9 @@ public class TestChooser extends JDialog {
 
         final FilteredJList list = new FilteredJList();
         list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        DefaultListModel model = new DefaultListModel();
-        for (Class c : classes) {
+        DefaultListModel<Class<?>> model = new DefaultListModel<>();
+        model.ensureCapacity(classes.size());
+        for (Class<?> c : classes) {
             model.addElement(c);
         }
         list.setModel(model);
@@ -332,11 +346,13 @@ public class TestChooser extends JDialog {
 
         list.getSelectionModel().addListSelectionListener(
                 new ListSelectionListener() {
+                    @Override
                     public void valueChanged(ListSelectionEvent e) {
                         selectedClass = list.getSelectedValuesList();
                     }
                 });
         list.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && selectedClass != null) {
                     startApp(selectedClass);
@@ -362,6 +378,7 @@ public class TestChooser extends JDialog {
         buttonPanel.add(okButton);
         getRootPane().setDefaultButton(okButton);
         okButton.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 startApp(selectedClass);
             }
@@ -371,6 +388,7 @@ public class TestChooser extends JDialog {
         cancelButton.setMnemonic('C');
         buttonPanel.add(cancelButton);
         cancelButton.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 dispose();
             }
@@ -380,17 +398,20 @@ public class TestChooser extends JDialog {
         center();
     }
 
-    private class FilteredJList extends JList {
+    private class FilteredJList extends JList<Class<?>> {
         private static final long serialVersionUID = 1L;
 
         private String filter;
         private ListModel originalModel;
 
+        @Override
+        @SuppressWarnings("unchecked")
         public void setModel(ListModel m) {
             originalModel = m;
             super.setModel(m);
         }
 
+        @SuppressWarnings("unchecked")
         private void update() {
             if (filter == null || filter.length() == 0) {
                 super.setModel(originalModel);
@@ -452,15 +473,20 @@ public class TestChooser extends JDialog {
     }
 
     protected void start(String[] args) {
-        final Vector<Class> classes = new Vector<Class>();
+        executorService = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, "AppStarter");
+            }
+        });
+        final Set<Class<?>> classes = new LinkedHashSet<>();
         logger.fine("Composing Test list...");
         addDisplayedClasses(classes);
         setup(classes);
-        Class<?> cls;
         setVisible(true);
     }
 
-    protected void addDisplayedClasses(Vector<Class> classes) {
+    protected void addDisplayedClasses(Set<Class<?>> classes) {
         find("jme3test", true, classes);
     }
 
@@ -471,19 +497,23 @@ public class TestChooser extends JDialog {
                 BorderLayout.WEST);
         final javax.swing.JTextField jtf = new javax.swing.JTextField();
         jtf.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
             public void removeUpdate(DocumentEvent e) {
                 classes.setFilter(jtf.getText());
             }
 
+            @Override
             public void insertUpdate(DocumentEvent e) {
                 classes.setFilter(jtf.getText());
             }
 
+            @Override
             public void changedUpdate(DocumentEvent e) {
                 classes.setFilter(jtf.getText());
             }
         });
         jtf.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 selectedClass = classes.getSelectedValuesList();
                 startApp(selectedClass);
@@ -492,6 +522,7 @@ public class TestChooser extends JDialog {
         final JCheckBox showSettingCheck = new JCheckBox("Show Setting");
         showSettingCheck.setSelected(true);
         showSettingCheck.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 showSetting = showSettingCheck.isSelected();
             }

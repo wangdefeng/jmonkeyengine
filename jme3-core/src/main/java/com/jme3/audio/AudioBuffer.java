@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,15 +31,15 @@
  */
 package com.jme3.audio;
 
-import com.jme3.audio.AudioData.DataType;
 import com.jme3.util.BufferUtils;
 import com.jme3.util.NativeObject;
+
 import java.nio.ByteBuffer;
 
 /**
  * An <code>AudioBuffer</code> is an implementation of AudioData
  * where the audio is buffered (stored in memory). All parts of it
- * are accessible at any time. <br/>
+ * are accessible at any time. <br>
  * AudioBuffers are useful for short sounds, like effects, etc.
  *
  * @author Kirill Vainer
@@ -51,14 +51,15 @@ public class AudioBuffer extends AudioData {
      */
     protected ByteBuffer audioData;
 
-    public AudioBuffer(){
+    public AudioBuffer() {
         super();
     }
-    
-    protected AudioBuffer(int id){
+
+    protected AudioBuffer(int id) {
         super(id);
     }
 
+    @Override
     public DataType getDataType() {
         return DataType.Buffer;
     }
@@ -67,7 +68,8 @@ public class AudioBuffer extends AudioData {
      * @return The duration of the audio in seconds. It is expected
      * that audio is uncompressed.
      */
-    public float getDuration(){
+    @Override
+    public float getDuration() {
         int bytesPerSec = (bitsPerSample / 8) * channels * sampleRate;
         if (audioData != null)
             return (float) audioData.limit() / bytesPerSec;
@@ -76,17 +78,24 @@ public class AudioBuffer extends AudioData {
     }
 
     @Override
-    public String toString(){
-        return getClass().getSimpleName() +
-               "[id="+id+", ch="+channels+", bits="+bitsPerSample +
-               ", rate="+sampleRate+", duration="+getDuration()+"]";
+    public String toString() {
+        return getClass().getSimpleName()
+                + "[id=" + id + ", ch=" + channels + ", bits=" + bitsPerSample
+                + ", rate=" + sampleRate + ", duration=" + getDuration() + "]";
     }
 
     /**
      * Update the data in the buffer with new data.
-     * @param data
+     *
+     * @param data the audio data provided (not null, direct, alias created)
+     * @throws IllegalArgumentException if the provided buffer is not a direct buffer
      */
-    public void updateData(ByteBuffer data){
+    public void updateData(ByteBuffer data) {
+        if (!data.isDirect()) {
+            throw new IllegalArgumentException(
+                    "Currently only direct buffers are allowed");
+        }
+
         this.audioData = data;
         updateNeeded = true;
     }
@@ -94,10 +103,11 @@ public class AudioBuffer extends AudioData {
     /**
      * @return The buffered audio data.
      */
-    public ByteBuffer getData(){
+    public ByteBuffer getData() {
         return audioData;
     }
 
+    @Override
     public void resetObject() {
         id = -1;
         setUpdateNeeded();
@@ -109,10 +119,10 @@ public class AudioBuffer extends AudioData {
             BufferUtils.destroyDirectBuffer(audioData);
         }
     }
-    
+
     @Override
     public void deleteObject(Object rendererObject) {
-        ((AudioRenderer)rendererObject).deleteAudioData(this);
+        ((AudioRenderer) rendererObject).deleteAudioData(this);
     }
 
     @Override
@@ -122,6 +132,6 @@ public class AudioBuffer extends AudioData {
 
     @Override
     public long getUniqueId() {
-        return ((long)OBJTYPE_AUDIOBUFFER << 32) | ((long)id);
+        return ((long) OBJTYPE_AUDIOBUFFER << 32) | ((long) id);
     }
 }

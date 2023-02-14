@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2009-2022 jMonkeyEngine
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * * Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ * * Neither the name of 'jMonkeyEngine' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.jme3.scene.plugins.gltf;
 
 import com.jme3.asset.AssetLoadException;
@@ -59,7 +90,14 @@ public class TrackData {
                         KeyFrame kf = keyFrames.get(j);
                         if (Float.floatToIntBits(kf.time) != Float.floatToIntBits(time)) {
                             if (time > kf.time) {
-                                continue;
+                                if (j < keyFrames.size() - 1) {
+                                    // Keep searching for the insertion point.
+                                    continue;
+                                }
+                                kf = new KeyFrame();
+                                kf.time = time;
+                                // Add kf after the last keyframe in the list.
+                                keyFrames.add(kf);
                             } else {
                                 kf = new KeyFrame();
                                 kf.time = time;
@@ -134,17 +172,29 @@ public class TrackData {
             }
         }
 
-        checkTimesConsistantcy();
+        checkTimesConsistency();
 
         length = times[times.length - 1];
     }
 
-    public void checkTimesConsistantcy() {
+    /**
+     * Verify that the
+     * {@link #times}, {@link #translations}, {@link #rotations}, and
+     * {@link #scales} vectors all have the same length, if present.
+     *
+     * @throws AssetLoadException if the lengths differ
+     */
+    public void checkTimesConsistency() {
         if ((translations != null && times.length != translations.length)
                 || (rotations != null && times.length != rotations.length)
                 || (scales != null && times.length != scales.length)) {
             throw new AssetLoadException("Inconsistent animation sampling ");
         }
+    }
+
+    @Deprecated
+    public void checkTimesConsistantcy() {
+        checkTimesConsistency();
     }
 
     private void populateTransform(Type type, int index, List<KeyFrame> keyFrames, KeyFrame currentKeyFrame, TransformIndices transformIndices) {

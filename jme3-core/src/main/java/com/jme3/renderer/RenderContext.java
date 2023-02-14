@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,293 +32,358 @@
 package com.jme3.renderer;
 
 import com.jme3.material.RenderState;
-import com.jme3.material.RenderState.BlendFunc;
 import com.jme3.math.ColorRGBA;
-import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.shader.Shader;
 import com.jme3.texture.FrameBuffer;
 import com.jme3.texture.Image;
+import java.lang.ref.WeakReference;
 
 /**
  * Represents the current state of the graphics library. This class is used
  * internally to reduce state changes. NOTE: This class is specific to OpenGL.
  */
 public class RenderContext {
+    /**
+     * Number of texture units that JME supports.
+     */
+    public static final int maxTextureUnits = 16;
 
     /**
+     * Criteria for culling faces.
+     *
      * @see RenderState#setFaceCullMode(com.jme3.material.RenderState.FaceCullMode)
      */
-    public RenderState.FaceCullMode cullMode = RenderState.FaceCullMode.Off;
+    public RenderState.FaceCullMode cullMode;
 
     /**
-     * @see RenderState#setDepthTest(boolean) 
+     * Enables depth testing for color pixels.
+     *
+     * @see RenderState#setDepthTest(boolean)
      */
-    public boolean depthTestEnabled = false;
+    public boolean depthTestEnabled;
 
     /**
-     * @see RenderState#setDepthWrite(boolean) 
+     * Enables depth writing.
+     *
+     * @see RenderState#setDepthWrite(boolean)
      */
-    public boolean depthWriteEnabled = true;
+    public boolean depthWriteEnabled;
 
     /**
-     * @see RenderState#setColorWrite(boolean) 
+     * Enables color writing.
+     *
+     * @see RenderState#setColorWrite(boolean)
      */
-    public boolean colorWriteEnabled = true;
+    public boolean colorWriteEnabled;
 
     /**
-     * @see Renderer#setClipRect(int, int, int, int) 
+     * Enables the clipping rectangle.
+     *
+     * @see Renderer#setClipRect(int, int, int, int)
      */
-    public boolean clipRectEnabled = false;
+    public boolean clipRectEnabled;
 
     /**
-     * @see RenderState#setPolyOffset(float, float) 
+     * Enables z-order offset for polygons.
+     *
+     * @see RenderState#setPolyOffset(float, float)
      */
-    public boolean polyOffsetEnabled = false;
-    
-    /**
-     * @see RenderState#setPolyOffset(float, float) 
-     */
-    public float polyOffsetFactor = 0;
-    
-    /**
-     * @see RenderState#setPolyOffset(float, float) 
-     */
-    public float polyOffsetUnits = 0;
+    public boolean polyOffsetEnabled;
 
     /**
-     * @see Mesh#setPointSize(float) 
+     * Maximum Z slope for z-order offset.
+     *
+     * @see RenderState#setPolyOffset(float, float)
      */
-    public float pointSize = 1;
-    
+    public float polyOffsetFactor;
+
     /**
+     * Minimum resolvable depth buffer value for z-order offset.
+     *
+     * @see RenderState#setPolyOffset(float, float)
+     */
+    public float polyOffsetUnits;
+
+    /**
+     * No longer used.
+     */
+    public float pointSize;
+
+    /**
+     * Line width for meshes.
+     *
      * @see RenderState#setLineWidth(float)
      */
-    public float lineWidth = 1;
+    public float lineWidth;
 
     /**
-     * @see RenderState#setBlendMode(com.jme3.material.RenderState.BlendMode) 
+     * How to blend input pixels with those already in the color buffer.
+     *
+     * @see RenderState#setBlendMode(com.jme3.material.RenderState.BlendMode)
      */
-    public RenderState.BlendMode blendMode = RenderState.BlendMode.Off;
+    public RenderState.BlendMode blendMode;
 
     /**
-     * @see RenderState#setBlendEquation(com.jme3.material.RenderState.BlendEquation) 
+     * RGB blend equation for BlendMode.Custom.
+     *
+     * @see RenderState#setBlendEquation(com.jme3.material.RenderState.BlendEquation)
      */
-    public RenderState.BlendEquation blendEquation = RenderState.BlendEquation.Add;
-    
-    /**
-     * @see RenderState#setBlendEquationAlpha(com.jme3.material.RenderState.BlendEquationAlpha) 
-     */
-    public RenderState.BlendEquationAlpha blendEquationAlpha = RenderState.BlendEquationAlpha.InheritColor;
+    public RenderState.BlendEquation blendEquation;
 
     /**
-     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc,
+     * Alpha blend equation for BlendMode.Custom.
+     *
+     * @see RenderState#setBlendEquationAlpha(com.jme3.material.RenderState.BlendEquationAlpha)
+     */
+    public RenderState.BlendEquationAlpha blendEquationAlpha;
+
+    /**
+     * RGB source blend factor for BlendMode.Custom.
+     *
+     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc,
+     *      com.jme3.material.RenderState.BlendFunc,
      *      com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc)
      */
-    public RenderState.BlendFunc sfactorRGB = RenderState.BlendFunc.One;
+    public RenderState.BlendFunc sfactorRGB;
 
     /**
-     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc,
+     * RGB destination blend factor for BlendMode.Custom.
+     *
+     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc,
+     *      com.jme3.material.RenderState.BlendFunc,
      *      com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc)
      */
-    public RenderState.BlendFunc dfactorRGB = RenderState.BlendFunc.One;
+    public RenderState.BlendFunc dfactorRGB;
 
     /**
-     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc,
+     * Alpha source blend factor for BlendMode.Custom.
+     *
+     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc,
+     *      com.jme3.material.RenderState.BlendFunc,
      *      com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc)
      */
-    public RenderState.BlendFunc sfactorAlpha = RenderState.BlendFunc.One;
+    public RenderState.BlendFunc sfactorAlpha;
 
     /**
-     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc,
+     * Alpha destination blend factor for BlendMode.Custom.
+     *
+     * @see RenderState#setCustomBlendFactors(com.jme3.material.RenderState.BlendFunc,
+     *      com.jme3.material.RenderState.BlendFunc,
      *      com.jme3.material.RenderState.BlendFunc, com.jme3.material.RenderState.BlendFunc)
      */
-    public RenderState.BlendFunc dfactorAlpha = RenderState.BlendFunc.One;
+    public RenderState.BlendFunc dfactorAlpha;
 
     /**
-     * @see RenderState#setWireframe(boolean) 
+     * Enables wireframe rendering of triangle meshes.
+     *
+     * @see RenderState#setWireframe(boolean)
      */
-    public boolean wireframe = false;
+    public boolean wireframe;
 
     /**
-     * @see Renderer#setShader(com.jme3.shader.Shader) 
+     * ID of the shader for rendering.
+     *
+     * @see Renderer#setShader(com.jme3.shader.Shader)
      */
     public int boundShaderProgram;
-    
+
     /**
-     * @see Renderer#setShader(com.jme3.shader.Shader) 
+     * Shader for rendering.
+     *
+     * @see Renderer#setShader(com.jme3.shader.Shader)
      */
     public Shader boundShader;
 
     /**
-     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer) 
+     * ID of the bound FrameBuffer.
+     *
+     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer)
      */
-    public int boundFBO = 0;
-    
+    public int boundFBO;
+
     /**
-     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer) 
+     * Currently bound FrameBuffer.
+     *
+     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer)
      */
     public FrameBuffer boundFB;
 
     /**
-     * Currently bound Renderbuffer
-     * 
-     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer) 
-     */
-    public int boundRB = 0;
-
-    /**
-     * Currently bound draw buffer
-     * -2 = GL_NONE
-     * -1 = GL_BACK
-     *  0 = GL_COLOR_ATTACHMENT0
-     *  n = GL_COLOR_ATTACHMENTn
-     *  where n is an integer greater than 1
-     * 
-     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer) 
-     * @see FrameBuffer#setTargetIndex(int) 
-     */
-    public int boundDrawBuf = -1;
-
-    /**
-     * Currently bound read buffer
+     * Currently bound Renderbuffer.
      *
-     * @see RenderContext#boundDrawBuf
-     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer) 
-     * @see FrameBuffer#setTargetIndex(int) 
+     * @see Renderer#setFrameBuffer(com.jme3.texture.FrameBuffer)
      */
-    public int boundReadBuf = -1;
+    public int boundRB;
 
+  
     /**
      * Currently bound element array vertex buffer.
-     * 
-     * @see Renderer#renderMesh(com.jme3.scene.Mesh, int, int, com.jme3.scene.VertexBuffer[]) 
+     *
+     * @see Renderer#renderMesh(com.jme3.scene.Mesh, int, int, com.jme3.scene.VertexBuffer[])
      */
     public int boundElementArrayVBO;
 
     /**
-     * @see Renderer#renderMesh(com.jme3.scene.Mesh, int, int, com.jme3.scene.VertexBuffer[]) 
+     * ID of the bound vertex array.
+     *
+     * @see Renderer#renderMesh(com.jme3.scene.Mesh, int, int, com.jme3.scene.VertexBuffer[])
      */
     public int boundVertexArray;
 
     /**
      * Currently bound array vertex buffer.
-     * 
-     * @see Renderer#renderMesh(com.jme3.scene.Mesh, int, int, com.jme3.scene.VertexBuffer[]) 
+     *
+     * @see Renderer#renderMesh(com.jme3.scene.Mesh, int, int, com.jme3.scene.VertexBuffer[])
      */
     public int boundArrayVBO;
-    
+
     /**
      * Currently bound pixel pack pixel buffer.
      */
     public int boundPixelPackPBO;
 
-    public int numTexturesSet = 0;
+    /**
+     * No longer used.
+     */
+    public int numTexturesSet;
 
     /**
      * Current bound texture IDs for each texture unit.
-     * 
-     * @see Renderer#setTexture(int, com.jme3.texture.Texture) 
+     *
+     * @see Renderer#setTexture(int, com.jme3.texture.Texture)
      */
-    public Image[] boundTextures = new Image[16];
+    public final WeakReference<Image> boundTextures[]
+            = new WeakReference[maxTextureUnits];
 
     /**
-     * IDList for texture units
-     * 
-     * @see Renderer#setTexture(int, com.jme3.texture.Texture) 
+     * IDList for texture units.
+     *
+     * @see Renderer#setTexture(int, com.jme3.texture.Texture)
      */
-    public IDList textureIndexList = new IDList();
+    public final IDList textureIndexList = new IDList();
 
     /**
-     * Currently bound texture unit
-     * 
-     * @see Renderer#setTexture(int, com.jme3.texture.Texture) 
+     * Currently bound texture unit.
+     *
+     * @see Renderer#setTexture(int, com.jme3.texture.Texture)
      */
-    public int boundTextureUnit = 0;
+    public int boundTextureUnit;
 
     /**
-     * Stencil Buffer state
+     * Stencil Buffer state.
      */
-    public boolean stencilTest = false;
-    public RenderState.StencilOperation frontStencilStencilFailOperation = RenderState.StencilOperation.Keep;
-    public RenderState.StencilOperation frontStencilDepthFailOperation = RenderState.StencilOperation.Keep;
-    public RenderState.StencilOperation frontStencilDepthPassOperation = RenderState.StencilOperation.Keep;
-    public RenderState.StencilOperation backStencilStencilFailOperation = RenderState.StencilOperation.Keep;
-    public RenderState.StencilOperation backStencilDepthFailOperation = RenderState.StencilOperation.Keep;
-    public RenderState.StencilOperation backStencilDepthPassOperation = RenderState.StencilOperation.Keep;
-    public RenderState.TestFunction frontStencilFunction = RenderState.TestFunction.Always;
-    public RenderState.TestFunction backStencilFunction = RenderState.TestFunction.Always;
+    public boolean stencilTest;
+    /**
+     * Action taken when the stencil test fails on a front-facing polygon.
+     */
+    public RenderState.StencilOperation frontStencilStencilFailOperation;
+    /**
+     * Action taken when the stencil test passes but the depth test fails on a front-facing polygon.
+     */
+    public RenderState.StencilOperation frontStencilDepthFailOperation;
+    /**
+     * Action taken when both tests pass on a front-facing polygon.
+     */
+    public RenderState.StencilOperation frontStencilDepthPassOperation;
+    /**
+     * Action taken when the stencil test fails on a back-facing polygon.
+     */
+    public RenderState.StencilOperation backStencilStencilFailOperation;
+    /**
+     * Action taken when the stencil test passes but the depth test fails on a back-facing polygon.
+     */
+    public RenderState.StencilOperation backStencilDepthFailOperation;
+    /**
+     * Action taken when both tests pass on a back-facing polygon.
+     */
+    public RenderState.StencilOperation backStencilDepthPassOperation;
+    /**
+     * Stencil test function for front-facing polygons.
+     */
+    public RenderState.TestFunction frontStencilFunction;
+    /**
+     * Stencil test function for back-facing polygons.
+     */
+    public RenderState.TestFunction backStencilFunction;
 
     /**
      * Vertex attribs currently bound and enabled. If a slot is null, then
      * it is disabled.
      */
-    public VertexBuffer[] boundAttribs = new VertexBuffer[16];
+    public final WeakReference<VertexBuffer>[] boundAttribs = new WeakReference[16];
 
     /**
-     * IDList for vertex attributes
+     * IDList for vertex attributes.
      */
-    public IDList attribIndexList = new IDList();
-    
-    /**
-     * depth test function
-     */
-    public RenderState.TestFunction depthFunc = RenderState.TestFunction.Less;
-    
-     /**
-     * alpha test function
-     */
-    public RenderState.TestFunction alphaFunc = RenderState.TestFunction.Greater;
+    public final IDList attribIndexList = new IDList();
 
+    /**
+     * Depth test function.
+     */
+    public RenderState.TestFunction depthFunc;
+
+    /**
+     * Alpha test function.
+     */
+    public RenderState.TestFunction alphaFunc;
+
+    /**
+     * ID of the initial draw buffer.
+     */
     public int initialDrawBuf;
-    public int initialReadBuf;
-    
-    public ColorRGBA clearColor = new ColorRGBA(0,0,0,0);
-    
     /**
-     * Reset the RenderContext to default GL state
+     * ID of the initial read buffer.
      */
-    public void reset(){
+    public int initialReadBuf;
+
+    /**
+     * Color applied when a color buffer is cleared.
+     */
+    public ColorRGBA clearColor = new ColorRGBA(0, 0, 0, 0);
+
+    /**
+     * Instantiates a context with appropriate default values.
+     */
+    public RenderContext() {
+        init();
+    }
+
+
+    private void init() {
         cullMode = RenderState.FaceCullMode.Off;
         depthTestEnabled = false;
-        depthWriteEnabled = false;
-        colorWriteEnabled = false;
+        depthWriteEnabled = true;
+        colorWriteEnabled = true;
         clipRectEnabled = false;
         polyOffsetEnabled = false;
         polyOffsetFactor = 0;
         polyOffsetUnits = 0;
         pointSize = 1;
+        lineWidth = 1;
         blendMode = RenderState.BlendMode.Off;
         blendEquation = RenderState.BlendEquation.Add;
         blendEquationAlpha = RenderState.BlendEquationAlpha.InheritColor;
-        sfactorRGB = BlendFunc.One;
-        dfactorRGB = BlendFunc.One;
-        sfactorAlpha = BlendFunc.One;
-        dfactorAlpha = BlendFunc.One;
+        sfactorRGB = RenderState.BlendFunc.One;
+        dfactorRGB = RenderState.BlendFunc.One;
+        sfactorAlpha = RenderState.BlendFunc.One;
+        dfactorAlpha = RenderState.BlendFunc.One;
         wireframe = false;
+
         boundShaderProgram = 0;
         boundShader = null;
         boundFBO = 0;
         boundFB = null;
         boundRB = 0;
-        boundDrawBuf = -1; 
-        boundReadBuf = -1;
+
         boundElementArrayVBO = 0;
         boundVertexArray = 0;
         boundArrayVBO = 0;
         boundPixelPackPBO = 0;
         numTexturesSet = 0;
-        for (int i = 0; i < boundTextures.length; i++)
-            boundTextures[i] = null;
-
-        textureIndexList.reset();
         boundTextureUnit = 0;
-        for (int i = 0; i < boundAttribs.length; i++)
-            boundAttribs[i] = null;
-
-        attribIndexList.reset();
-        
         stencilTest = false;
+
         frontStencilStencilFailOperation = RenderState.StencilOperation.Keep;
         frontStencilDepthFailOperation = RenderState.StencilOperation.Keep;
         frontStencilDepthPassOperation = RenderState.StencilOperation.Keep;
@@ -327,9 +392,30 @@ public class RenderContext {
         backStencilDepthPassOperation = RenderState.StencilOperation.Keep;
         frontStencilFunction = RenderState.TestFunction.Always;
         backStencilFunction = RenderState.TestFunction.Always;
-        
-        depthFunc = RenderState.TestFunction.LessOrEqual;    
+
+        depthFunc = RenderState.TestFunction.Less;
         alphaFunc = RenderState.TestFunction.Greater;
-        clearColor.set(0,0,0,0);
+        cullMode = RenderState.FaceCullMode.Off;
+
+        clearColor.set(0, 0, 0, 0);
+    }
+
+    /**
+     * Resets the RenderContext to default GL state.
+     */
+    public void reset() {
+        init();
+
+        for (int i = 0; i < boundTextures.length; i++) {
+            boundTextures[i] = null;
+        }
+
+        textureIndexList.reset();
+
+        for (int i = 0; i < boundAttribs.length; i++) {
+            boundAttribs[i] = null;
+        }
+
+        attribIndexList.reset();
     }
 }

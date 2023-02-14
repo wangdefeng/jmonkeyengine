@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,15 +54,17 @@ public class Rectangle implements Cloneable {
     }
 
     @Override
-    public Rectangle clone(){
+    public Rectangle clone() {
         try {
             return (Rectangle) super.clone();
         } catch (CloneNotSupportedException ex) {
             throw new AssertionError();
         }
     }
-    
+
+    @Override
     public String toString() {
-        return getClass().getSimpleName() + "[x=" + x + ", y=" + y + ", width=" + width + ", height=" + height + "]"; 
+        return getClass().getSimpleName()
+                + "[x=" + x + ", y=" + y + ", width=" + width + ", height=" + height + "]";
     }
 }

@@ -1,9 +1,10 @@
-jMonkeyEngine 
+jMonkeyEngine
 =============
 
 [![Build Status](https://github.com/jMonkeyEngine/jmonkeyengine/workflows/Build%20jMonkeyEngine/badge.svg)](https://github.com/jMonkeyEngine/jmonkeyengine/actions)
 
-jMonkeyEngine is a 3-D game engine for adventurous Java developers. It’s open-source, cross-platform, and cutting-edge. 3.2.4 is the latest stable version of the jMonkeyEngine 3 SDK, a complete game development suite. We'll release 3.2.x updates until the major 3.3 release arrives.
+jMonkeyEngine is a 3-D game engine for adventurous Java developers. It’s open-source, cross-platform, and cutting-edge.
+v3.5.2 is the latest stable version of both the engine and the jMonkeyEngine SDK.
 
 The engine is used by several commercial game studios and computer-science courses. Here's a taste:
 
@@ -20,6 +21,14 @@ The engine is used by several commercial game studios and computer-science cours
  - [Lightspeed Frontier (on Steam)](https://store.steampowered.com/app/548650/Lightspeed_Frontier/)
  - [Skullstone](http://www.skullstonegame.com/)
  - [Spoxel (on Steam)](https://store.steampowered.com/app/746880/Spoxel/)
+ - [Nine Circles of Hell (on Steam)](https://store.steampowered.com/app/1200600/Nine_Circles_of_Hell/)
+ - [Leap](https://gamejolt.com/games/leap/313308)
+ - [Jumping Jack Flag](http://timealias.bplaced.net/jack/)
+ - [PapaSpace Flight Simulation](https://www.papaspace.at/)
+ - [Cubic Nightmare](https://jaredbgreat.itch.io/cubic-nightmare)
+ - [Chatter Games](https://chatter-games.com)
+ - [Exotic Matter](https://exoticmatter.io)
+ - [Demon Lord](https://play.google.com/store/apps/details?id=com.dreiInitiative.demonLord&pli=1)
 
 ## Getting started
 
@@ -34,8 +43,8 @@ Note: The master branch on GitHub is a development version of the engine and is 
  - NetBeans Platform
  - Gradle
 
-Plus a bunch of awesome libraries & tight integrations like Bullet, Blender, NiftyGUI and other goodies.
- 
+Plus a bunch of awesome libraries & tight integrations like Bullet, NiftyGUI and other goodies.
+
 ### Documentation
 
 Did you miss it? Don't sweat it, [here it is again](https://jmonkeyengine.github.io/wiki).
@@ -46,5 +55,5 @@ Read our [contribution guide](https://github.com/jMonkeyEngine/jmonkeyengine/blo
 
 ### License
 
-New BSD (3-clause) License. In other words, you do whatever makes you happy!
+[New BSD (3-clause) License](https://github.com/jMonkeyEngine/jmonkeyengine/blob/master/LICENSE.md)
 

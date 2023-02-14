@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2022 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,6 @@ import com.jme3.util.*;
 import com.jme3.util.IntMap.Entry;
 import com.jme3.util.clone.Cloner;
 import com.jme3.util.clone.JmeCloneable;
-
 import java.io.IOException;
 import java.nio.*;
 import java.util.ArrayList;
@@ -58,8 +57,6 @@ import java.util.ArrayList;
  * Meshes may contain three types of geometric primitives:
  * <ul>
  * <li>Points - Every vertex represents a single point in space.
- * Points can also be used for {@link RenderState#setPointSprite(boolean) point
- * sprite} mode.</li>
  * <li>Lines - 2 vertices represent a line segment, with the width specified
  * via {@link Material#getAdditionalRenderState()} and {@link RenderState#setLineWidth(float)}.</li>
  * <li>Triangles - 3 vertices represent a solid triangle primitive. </li>
@@ -79,50 +76,46 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
          * determined via the vertex shader's <code>gl_PointSize</code> output.
          */
         Points(true),
-
         /**
          * A primitive is a line segment. Every two vertices specify
-         * a single line. {@link Material#getAdditionalRenderState()} and {@link RenderState#setLineWidth(float)} can be used
+         * a single line. {@link Material#getAdditionalRenderState()}
+         * and {@link RenderState#setLineWidth(float)} can be used
          * to set the width of the lines.
          */
         Lines(true),
-
         /**
          * A primitive is a line segment. The first two vertices specify
          * a single line, while subsequent vertices are combined with the
-         * previous vertex to make a line. {@link Material#getAdditionalRenderState()} and {@link RenderState#setLineWidth(float)} can
+         * previous vertex to make a line. {@link Material#getAdditionalRenderState()}
+         * and {@link RenderState#setLineWidth(float)} can
          * be used to set the width of the lines.
          */
         LineStrip(false),
-
         /**
          * Identical to {@link #LineStrip} except that at the end
          * the last vertex is connected with the first to form a line.
-         * {@link Material#getAdditionalRenderState()} and {@link RenderState#setLineWidth(float)} can be used
+         * {@link Material#getAdditionalRenderState()}
+         * and {@link RenderState#setLineWidth(float)} can be used
          * to set the width of the lines.
          */
         LineLoop(false),
-
         /**
          * A primitive is a triangle. Each 3 vertices specify a single
          * triangle.
          */
         Triangles(true),
-
         /**
          * Similar to {@link #Triangles}, the first 3 vertices
          * specify a triangle, while subsequent vertices are combined with
          * the previous two to form a triangle.
          */
         TriangleStrip(false),
-
         /**
          * Similar to {@link #Triangles}, the first 3 vertices
          * specify a triangle, each 2 subsequent vertices are combined
          * with the very first vertex to make a triangle.
          */
         TriangleFan(false),
-
         /**
          * A combination of various triangle modes. It is best to avoid
          * using this mode as it may not be supported by all renderers.
@@ -138,7 +131,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         Patch(true);
         private boolean listMode = false;
 
-        private Mode(boolean listMode){
+        private Mode(boolean listMode) {
             this.listMode = listMode;
         }
 
@@ -151,7 +144,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
          *
          * @return true if the mode is a list type mode
          */
-        public boolean isListMode(){
+        public boolean isListMode() {
             return listMode;
         }
     }
@@ -160,7 +153,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * The bounding volume that contains the mesh entirely.
      * By default a BoundingBox (AABB).
      */
-    private BoundingVolume meshBound =  new BoundingBox();
+    private BoundingVolume meshBound = new BoundingBox();
 
     private CollisionData collisionTree = null;
 
@@ -175,7 +168,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     private int vertCount = -1;
     private int elementCount = -1;
     private int instanceCount = -1;
-    private int patchVertexCount=3; //only used for tessellation
+    private int patchVertexCount = 3; //only used for tessellation
     private int maxNumWeights = -1; // only if using skeletal animation
 
     private int[] elementLengths;
@@ -188,7 +181,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     /**
      * Creates a new mesh with no {@link VertexBuffer vertex buffers}.
      */
-    public Mesh(){
+    public Mesh() {
     }
 
     /**
@@ -226,8 +219,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @return a deep clone of this mesh.
      */
-    public Mesh deepClone(){
-        try{
+    public Mesh deepClone() {
+        try {
             Mesh clone = (Mesh) super.clone();
             clone.meshBound = meshBound != null ? meshBound.clone() : null;
 
@@ -237,7 +230,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
 
             clone.buffers = new IntMap<>();
             clone.buffersList = new SafeArrayList<>(VertexBuffer.class);
-            for (VertexBuffer vb : buffersList.getArray()){
+            for (VertexBuffer vb : buffersList.getArray()) {
                 VertexBuffer bufClone = vb.clone();
                 clone.buffers.put(vb.getBufferType().ordinal(), bufClone);
                 clone.buffersList.add(bufClone);
@@ -255,7 +248,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
             clone.elementLengths = elementLengths != null ? elementLengths.clone() : null;
             clone.modeStart = modeStart != null ? modeStart.clone() : null;
             return clone;
-        }catch (CloneNotSupportedException ex){
+        } catch (CloneNotSupportedException ex) {
             throw new AssertionError();
         }
     }
@@ -269,9 +262,9 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @return A clone of the mesh for animation use.
      */
-    public Mesh cloneForAnim(){
+    public Mesh cloneForAnim() {
         Mesh clone = clone();
-        if (getBuffer(Type.BindPosePosition) != null){
+        if (getBuffer(Type.BindPosePosition) != null) {
             VertexBuffer oldPos = getBuffer(Type.Position);
 
             // NOTE: creates deep clone
@@ -279,13 +272,13 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
             clone.clearBuffer(Type.Position);
             clone.setBuffer(newPos);
 
-            if (getBuffer(Type.BindPoseNormal) != null){
+            if (getBuffer(Type.BindPoseNormal) != null) {
                 VertexBuffer oldNorm = getBuffer(Type.Normal);
                 VertexBuffer newNorm = oldNorm.clone();
                 clone.clearBuffer(Type.Normal);
                 clone.setBuffer(newNorm);
 
-                if (getBuffer(Type.BindPoseTangent) != null){
+                if (getBuffer(Type.BindPoseTangent) != null) {
                     VertexBuffer oldTang = getBuffer(Type.Tangent);
                     VertexBuffer newTang = oldTang.clone();
                     clone.clearBuffer(Type.Tangent);
@@ -302,7 +295,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     @Override
     public Mesh jmeClone() {
         try {
-            Mesh clone = (Mesh)super.clone();
+            Mesh clone = (Mesh) super.clone();
             clone.vertexArrayID = -1;
             return clone;
         } catch (CloneNotSupportedException ex) {
@@ -314,8 +307,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *  Called internally by com.jme3.util.clone.Cloner.  Do not call directly.
      */
     @Override
-    public void cloneFields( Cloner cloner, Object original ) {
-
+    public void cloneFields(Cloner cloner, Object original) {
         // Probably could clone this now but it will get regenerated anyway.
         this.collisionTree = null;
 
@@ -328,7 +320,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     }
 
     /**
-     * @param forSoftwareAnim
+     * @param forSoftwareAnim ignored
      * @deprecated use generateBindPose();
      */
     @Deprecated
@@ -393,7 +385,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @param forSoftwareAnim Should be true to enable the conversion.
      */
-    public void prepareForAnim(boolean forSoftwareAnim){
+    public void prepareForAnim(boolean forSoftwareAnim) {
         if (forSoftwareAnim) {
             // convert indices to ubytes on the heap
             VertexBuffer indices = getBuffer(Type.BoneIndex);
@@ -425,7 +417,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
                 weights.updateData(arrayWeight);
             }
             weights.setUsage(Usage.CpuOnly);
-            // position, normal, and tanget buffers to be in "Stream" mode
+            // position, normal, and tangent buffers to be in "Stream" mode
             VertexBuffer positions = getBuffer(Type.Position);
             VertexBuffer normals = getBuffer(Type.Normal);
             VertexBuffer tangents = getBuffer(Type.Tangent);
@@ -445,32 +437,37 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
                 VertexBuffer indices = getBuffer(Type.BoneIndex);
                 if (indices.getFormat() == Format.UnsignedByte) {
                     ByteBuffer originalIndex = (ByteBuffer) indices.getData();
-                    ByteBuffer directIndex = BufferUtils.createByteBuffer(originalIndex.capacity());
+                    ByteBuffer directIndex
+                            = BufferUtils.createByteBuffer(originalIndex.capacity());
                     originalIndex.clear();
                     directIndex.put(originalIndex);
                     result = directIndex;
                 } else {
                     //bone indices can be stored in an UnsignedShort buffer
                     ShortBuffer originalIndex = (ShortBuffer) indices.getData();
-                    ShortBuffer directIndex = BufferUtils.createShortBuffer(originalIndex.capacity());
+                    ShortBuffer directIndex
+                            = BufferUtils.createShortBuffer(originalIndex.capacity());
                     originalIndex.clear();
                     directIndex.put(originalIndex);
                     result = directIndex;
                 }
-                indicesHW.setupData(Usage.Static, indices.getNumComponents(), indices.getFormat(), result);
+                indicesHW.setupData(Usage.Static, indices.getNumComponents(),
+                        indices.getFormat(), result);
             }
 
             VertexBuffer weightsHW = getBuffer(Type.HWBoneWeight);
             if (weightsHW.getData() == null) {
                 VertexBuffer weights = getBuffer(Type.BoneWeight);
                 FloatBuffer originalWeight = (FloatBuffer) weights.getData();
-                FloatBuffer directWeight = BufferUtils.createFloatBuffer(originalWeight.capacity());
+                FloatBuffer directWeight
+                        = BufferUtils.createFloatBuffer(originalWeight.capacity());
                 originalWeight.clear();
                 directWeight.put(originalWeight);
-                weightsHW.setupData(Usage.Static, weights.getNumComponents(), weights.getFormat(), directWeight);
+                weightsHW.setupData(Usage.Static, weights.getNumComponents(),
+                        weights.getFormat(), directWeight);
             }
 
-            // position, normal, and tanget buffers to be in "Static" mode
+            // position, normal, and tangent buffers to be in "Static" mode
             VertexBuffer positions = getBuffer(Type.Position);
             VertexBuffer normals = getBuffer(Type.Normal);
             VertexBuffer tangents = getBuffer(Type.Tangent);
@@ -502,7 +499,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @param lodLevels The LOD levels to set
      */
-    public void setLodLevels(VertexBuffer[] lodLevels){
+    public void setLodLevels(VertexBuffer[] lodLevels) {
         this.lodLevels = lodLevels;
     }
 
@@ -510,7 +507,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @return The number of LOD levels set on this mesh, including the main
      * index buffer, returns zero if there are no lod levels.
      */
-    public int getNumLodLevels(){
+    public int getNumLodLevels() {
         return lodLevels != null ? lodLevels.length : 0;
     }
 
@@ -526,7 +523,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @see #setLodLevels(com.jme3.scene.VertexBuffer[])
      */
-    public VertexBuffer getLodLevel(int lod){
+    public VertexBuffer getLodLevel(int lod) {
         return lodLevels[lod];
     }
 
@@ -559,6 +556,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
 
     /**
      * Get the mode start indices for {@link Mode#Hybrid} mesh mode.
+     *
+     * @param modeStart the pre-existing array
      */
     public void setModeStart(int[] modeStart) {
         this.modeStart = modeStart;
@@ -603,7 +602,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * Only relevant if this mesh has bone index/weight buffers.
      * This value should be between 0 and 4.
      *
-     * @param maxNumWeights
+     * @param maxNumWeights the desired number (between 0 and 4, inclusive)
      */
     public void setMaxNumWeights(int maxNumWeights) {
         this.maxNumWeights = maxNumWeights;
@@ -614,8 +613,6 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * determined in the vertex shader.
      *
      * @return <code>1.0</code>
-     *
-     * @see #setPointSize(float)
      */
     @Deprecated
     public float getPointSize() {
@@ -623,20 +620,11 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     }
 
     /**
-     * @deprecated Does nothing, since the size of {@link Mode#Points points} is
-     * determined via the vertex shader's <code>gl_PointSize</code> output.
-     *
-     * @param pointSize ignored
-     */
-    @Deprecated
-    public void setPointSize(float pointSize) {
-    }
-
-    /**
      * Returns the line width for line meshes.
      *
      * @return the line width
-     * @deprecated use {@link Material#getAdditionalRenderState()} and {@link RenderState#getLineWidth()}
+     * @deprecated use {@link Material#getAdditionalRenderState()}
+     *             and {@link RenderState#getLineWidth()}
      */
     @Deprecated
     public float getLineWidth() {
@@ -649,7 +637,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * the default value is 1.0.
      *
      * @param lineWidth The line width
-     * @deprecated use {@link Material#getAdditionalRenderState()} and {@link RenderState#setLineWidth(float)}
+     * @deprecated use {@link Material#getAdditionalRenderState()}
+     *             and {@link RenderState#setLineWidth(float)}
      */
     @Deprecated
     public void setLineWidth(float lineWidth) {
@@ -665,7 +654,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * for all {@link VertexBuffer vertex buffers} on this Mesh.
      */
     public void setStatic() {
-        for (VertexBuffer vb : buffersList.getArray()){
+        for (VertexBuffer vb : buffersList.getArray()) {
             vb.setUsage(Usage.Static);
         }
     }
@@ -676,7 +665,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * for all {@link VertexBuffer vertex buffers} on this Mesh.
      */
     public void setDynamic() {
-        for (VertexBuffer vb : buffersList.getArray()){
+        for (VertexBuffer vb : buffersList.getArray()) {
             vb.setUsage(Usage.Dynamic);
         }
     }
@@ -686,8 +675,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * Sets the usage mode to {@link Usage#Stream}
      * for all {@link VertexBuffer vertex buffers} on this Mesh.
      */
-    public void setStreamed(){
-        for (VertexBuffer vb : buffersList.getArray()){
+    public void setStreamed() {
+        for (VertexBuffer vb : buffersList.getArray()) {
             vb.setUsage(Usage.Stream);
         }
     }
@@ -698,7 +687,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * to <em>avoid</em> using this method as it disables some engine features.
      */
     @Deprecated
-    public void setInterleaved(){
+    public void setInterleaved() {
         ArrayList<VertexBuffer> vbs = new ArrayList<>();
         vbs.addAll(buffersList);
 
@@ -707,7 +696,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         vbs.remove(getBuffer(Type.Index));
 
         int stride = 0; // aka bytes per vertex
-        for (int i = 0; i < vbs.size(); i++){
+        for (int i = 0; i < vbs.size(); i++) {
             VertexBuffer vb = vbs.get(i);
 //            if (vb.getFormat() != Format.Float){
 //                throw new UnsupportedOperationException("Cannot interleave vertex buffer.\n" +
@@ -725,20 +714,20 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         buffers.put(Type.InterleavedData.ordinal(), allData);
         buffersList.add(allData);
 
-        for (int vert = 0; vert < getVertexCount(); vert++){
-            for (int i = 0; i < vbs.size(); i++){
+        for (int vert = 0; vert < getVertexCount(); vert++) {
+            for (int i = 0; i < vbs.size(); i++) {
                 VertexBuffer vb = vbs.get(i);
-                switch (vb.getFormat()){
+                switch (vb.getFormat()) {
                     case Float:
                         FloatBuffer fb = (FloatBuffer) vb.getData();
-                        for (int comp = 0; comp < vb.components; comp++){
+                        for (int comp = 0; comp < vb.components; comp++) {
                             dataBuf.putFloat(fb.get());
                         }
                         break;
                     case Byte:
                     case UnsignedByte:
                         ByteBuffer bb = (ByteBuffer) vb.getData();
-                        for (int comp = 0; comp < vb.components; comp++){
+                        for (int comp = 0; comp < vb.components; comp++) {
                             dataBuf.put(bb.get());
                         }
                         break;
@@ -746,20 +735,20 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
                     case Short:
                     case UnsignedShort:
                         ShortBuffer sb = (ShortBuffer) vb.getData();
-                        for (int comp = 0; comp < vb.components; comp++){
+                        for (int comp = 0; comp < vb.components; comp++) {
                             dataBuf.putShort(sb.get());
                         }
                         break;
                     case Int:
                     case UnsignedInt:
                         IntBuffer ib = (IntBuffer) vb.getData();
-                        for (int comp = 0; comp < vb.components; comp++){
+                        for (int comp = 0; comp < vb.components; comp++) {
                             dataBuf.putInt(ib.get());
                         }
                         break;
                     case Double:
                         DoubleBuffer db = (DoubleBuffer) vb.getData();
-                        for (int comp = 0; comp < vb.components; comp++){
+                        for (int comp = 0; comp < vb.components; comp++) {
                             dataBuf.putDouble(db.get());
                         }
                         break;
@@ -768,7 +757,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         }
 
         int offset = 0;
-        for (VertexBuffer vb : vbs){
+        for (VertexBuffer vb : vbs) {
             vb.setOffset(offset);
             vb.setStride(stride);
 
@@ -778,8 +767,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         }
     }
 
-    private int computeNumElements(int bufSize){
-        switch (mode){
+    private int computeNumElements(int bufSize) {
+        switch (mode) {
             case Triangles:
                 return bufSize / 3;
             case TriangleFan:
@@ -794,7 +783,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
             case LineStrip:
                 return bufSize - 1;
             case Patch:
-                return bufSize/patchVertexCount;
+                return bufSize / patchVertexCount;
             default:
                 throw new UnsupportedOperationException();
         }
@@ -803,8 +792,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     private int computeInstanceCount() {
         // Whatever the max of the base instance counts
         int max = 0;
-        for( VertexBuffer vb : buffersList ) {
-            if( vb.getBaseInstanceCount() > max ) {
+        for (VertexBuffer vb : buffersList) {
+            if (vb.getBaseInstanceCount() > max) {
                 max = vb.getBaseInstanceCount();
             }
         }
@@ -821,19 +810,19 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @throws IllegalStateException If this mesh is in
      * {@link #setInterleaved() interleaved} format.
      */
-    public void updateCounts(){
+    public void updateCounts() {
         if (getBuffer(Type.InterleavedData) != null) {
             throw new IllegalStateException("Should update counts before interleave");
         }
 
         VertexBuffer pb = getBuffer(Type.Position);
         VertexBuffer ib = getBuffer(Type.Index);
-        if (pb != null){
+        if (pb != null) {
             vertCount = pb.getData().limit() / pb.getNumComponents();
         }
-        if (ib != null){
+        if (ib != null) {
             elementCount = computeNumElements(ib.getData().limit());
-        }else{
+        } else {
             elementCount = computeNumElements(vertCount);
         }
         instanceCount = computeInstanceCount();
@@ -845,8 +834,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @param lod The lod level to look up
      * @return The triangle count for that LOD level
      */
-    public int getTriangleCount(int lod){
-        if (lodLevels != null){
+    public int getTriangleCount(int lod) {
+        if (lodLevels != null) {
             if (lod < 0) {
                 throw new IllegalArgumentException("LOD level cannot be < 0");
             }
@@ -856,9 +845,9 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
             }
 
             return computeNumElements(lodLevels[lod].getData().limit());
-        }else if (lod == 0){
+        } else if (lod == 0) {
             return elementCount;
-        }else{
+        } else {
             throw new IllegalArgumentException("There are no LOD levels on the mesh!");
         }
     }
@@ -872,7 +861,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @return how many triangles/elements are on this Mesh.
      */
-    public int getTriangleCount(){
+    public int getTriangleCount() {
         return elementCount;
     }
 
@@ -883,13 +872,15 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @return Number of vertices on the mesh
      */
-    public int getVertexCount(){
+    public int getVertexCount() {
         return vertCount;
     }
 
     /**
      * Returns the number of instances this mesh contains.  The instance
      * count is based on any VertexBuffers with instancing set.
+     *
+     * @return the number of instances
      */
     public int getInstanceCount() {
         return instanceCount;
@@ -906,24 +897,24 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @param v2 Vector to contain second vertex position
      * @param v3 Vector to contain third vertex position
      */
-    public void getTriangle(int index, Vector3f v1, Vector3f v2, Vector3f v3){
+    public void getTriangle(int index, Vector3f v1, Vector3f v2, Vector3f v3) {
         VertexBuffer pb = getBuffer(Type.Position);
         IndexBuffer ib = getIndicesAsList();
-        if (pb != null && pb.getFormat() == Format.Float && pb.getNumComponents() == 3){
+        if (pb != null && pb.getFormat() == Format.Float && pb.getNumComponents() == 3) {
             FloatBuffer fpb = (FloatBuffer) pb.getData();
 
-            // aquire triangle's vertex indices
+            // acquire triangle's vertex indices
             int vertIndex = index * 3;
             int vert1 = ib.get(vertIndex);
-            int vert2 = ib.get(vertIndex+1);
-            int vert3 = ib.get(vertIndex+2);
+            int vert2 = ib.get(vertIndex + 1);
+            int vert3 = ib.get(vertIndex + 2);
 
             BufferUtils.populateFromBuffer(v1, fpb, vert1);
             BufferUtils.populateFromBuffer(v2, fpb, vert2);
             BufferUtils.populateFromBuffer(v3, fpb, vert3);
-        }else{
+        } else {
             throw new UnsupportedOperationException("Position buffer not set or "
-                                                  + " has incompatible format");
+                    + " has incompatible format");
         }
     }
 
@@ -937,9 +928,10 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @param tri The triangle to store the positions in
      */
-    public void getTriangle(int index, Triangle tri){
+    public void getTriangle(int index, Triangle tri) {
         getTriangle(index, tri.get1(), tri.get2(), tri.get3());
         tri.setIndex(index);
+        tri.setCenter(null); // invalidate previously cached centroid, if any
         tri.setNormal(null);
     }
 
@@ -952,27 +944,31 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @param indices Indices of the triangle's vertices
      */
-    public void getTriangle(int index, int[] indices){
+    public void getTriangle(int index, int[] indices) {
         IndexBuffer ib = getIndicesAsList();
 
         // acquire triangle's vertex indices
         int vertIndex = index * 3;
         indices[0] = ib.get(vertIndex);
-        indices[1] = ib.get(vertIndex+1);
-        indices[2] = ib.get(vertIndex+2);
+        indices[1] = ib.get(vertIndex + 1);
+        indices[2] = ib.get(vertIndex + 2);
     }
 
     /**
      * Returns the mesh's VAO ID. Internal use only.
+     *
+     * @return the array ID
      */
-    public int getId(){
+    public int getId() {
         return vertexArrayID;
     }
 
     /**
      * Sets the mesh's VAO ID. Internal use only.
+     *
+     * @param id the array ID
      */
-    public void setId(int id){
+    public void setId(int id) {
         if (vertexArrayID != -1) {
             throw new IllegalStateException("ID has already been set.");
         }
@@ -987,7 +983,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * com.jme3.bounding.BoundingVolume,
      * com.jme3.collision.CollisionResults) }.
      */
-    public void createCollisionData(){
+    public void createCollisionData() {
         BIHTree tree = new BIHTree(this);
         tree.construct();
         collisionTree = tree;
@@ -1006,11 +1002,17 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * Handles collision detection, internal use only.
      * User code should only use collideWith() on scene
      * graph elements such as {@link Spatial}s.
+     *
+     * @param other the other Collidable
+     * @param worldMatrix the world matrix
+     * @param worldBound the world bound
+     * @param results storage for the results
+     * @return the number of collisions detected (&ge;0)
      */
     public int collideWith(Collidable other,
-                           Matrix4f worldMatrix,
-                           BoundingVolume worldBound,
-                           CollisionResults results){
+            Matrix4f worldMatrix,
+            BoundingVolume worldBound,
+            CollisionResults results) {
 
         switch (mode) {
             case Points:
@@ -1028,7 +1030,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
             return 0;
         }
 
-        if (collisionTree == null){
+        if (collisionTree == null) {
             createCollisionData();
         }
 
@@ -1042,7 +1044,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @param vb The buffer to set
      * @throws IllegalArgumentException If the buffer type is already set
      */
-    public void setBuffer(VertexBuffer vb){
+    public void setBuffer(VertexBuffer vb) {
         if (buffers.containsKey(vb.getBufferType().ordinal())) {
             throw new IllegalArgumentException("Buffer type already set: " + vb.getBufferType());
         }
@@ -1059,9 +1061,9 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @param type The buffer type to remove
      */
-    public void clearBuffer(VertexBuffer.Type type){
+    public void clearBuffer(VertexBuffer.Type type) {
         VertexBuffer vb = buffers.remove(type.ordinal());
-        if (vb != null){
+        if (vb != null) {
             buffersList.remove(vb);
             updateCounts();
         }
@@ -1079,14 +1081,14 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @throws UnsupportedOperationException If the buffer already set is
      * incompatible with the parameters given.
      */
-    public void setBuffer(Type type, int components, Format format, Buffer buf){
+    public void setBuffer(Type type, int components, Format format, Buffer buf) {
         VertexBuffer vb = buffers.get(type.ordinal());
-        if (vb == null){
+        if (vb == null) {
             vb = new VertexBuffer(type);
             vb.setupData(Usage.Dynamic, components, format, buf);
             setBuffer(vb);
-        }else{
-            if (vb.getNumComponents() != components || vb.getFormat() != format){
+        } else {
+            if (vb.getNumComponents() != components || vb.getFormat() != format) {
                 throw new UnsupportedOperationException("The buffer already set "
                         + "is incompatible with the given parameters");
             }
@@ -1110,7 +1112,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         setBuffer(type, components, Format.Float, buf);
     }
 
-    public void setBuffer(Type type, int components, float[] buf){
+    public void setBuffer(Type type, int components, float[] buf) {
         setBuffer(type, components, BufferUtils.createFloatBuffer(buf));
     }
 
@@ -1118,7 +1120,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         setBuffer(type, components, Format.UnsignedInt, buf);
     }
 
-    public void setBuffer(Type type, int components, int[] buf){
+    public void setBuffer(Type type, int components, int[] buf) {
         setBuffer(type, components, BufferUtils.createIntBuffer(buf));
     }
 
@@ -1126,7 +1128,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         setBuffer(type, components, Format.UnsignedShort, buf);
     }
 
-    public void setBuffer(Type type, int components, byte[] buf){
+    public void setBuffer(Type type, int components, byte[] buf) {
         setBuffer(type, components, BufferUtils.createByteBuffer(buf));
     }
 
@@ -1134,7 +1136,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         setBuffer(type, components, Format.UnsignedByte, buf);
     }
 
-    public void setBuffer(Type type, int components, short[] buf){
+    public void setBuffer(Type type, int components, short[] buf) {
         setBuffer(type, components, BufferUtils.createShortBuffer(buf));
     }
 
@@ -1145,7 +1147,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @param type The type of VertexBuffer
      * @return the VertexBuffer data, or null if not set
      */
-    public VertexBuffer getBuffer(Type type){
+    public VertexBuffer getBuffer(Type type) {
         return buffers.get(type.ordinal());
     }
 
@@ -1187,22 +1189,22 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @return A virtual or wrapped index buffer to read the data as a list
      */
-    public IndexBuffer getIndicesAsList(){
+    public IndexBuffer getIndicesAsList() {
         if (mode == Mode.Hybrid) {
             throw new UnsupportedOperationException("Hybrid mode not supported");
         }
 
         IndexBuffer ib = getIndexBuffer();
-        if (ib != null){
-            if (mode.isListMode()){
+        if (ib != null) {
+            if (mode.isListMode()) {
                 // already in list mode
                 return ib;
-            }else{
+            } else {
                 // not in list mode but it does have an index buffer
                 // wrap it so the data is converted to list format
                 return new WrappedIndexBuffer(this);
             }
-        }else{
+        } else {
             // return a virtual index buffer that will supply
             // "fake" indices in list format
             return new VirtualIndexBuffer(vertCount, mode);
@@ -1289,9 +1291,9 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
 
         VertexBuffer newIdxBuf = new VertexBuffer(Type.Index);
         newIdxBuf.setupData(oldIdxBuf.getUsage(),
-                            oldIdxBuf.getNumComponents(),
-                            newIndexBuf instanceof IndexIntBuffer ? Format.UnsignedInt : Format.UnsignedShort,
-                            newIndexBuf.getBuffer());
+                oldIdxBuf.getNumComponents(),
+                newIndexBuf instanceof IndexIntBuffer ? Format.UnsignedInt : Format.UnsignedShort,
+                newIndexBuf.getBuffer());
         clearBuffer(Type.Index);
         setBuffer(newIdxBuf);
 
@@ -1308,11 +1310,13 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
             //check for data before copying, some buffers are just empty shells
             //for caching purpose (HW skinning buffers), and will be filled when
             //needed
-            if(oldVb.getData()!=null){
+            if (oldVb.getData() != null) {
                 // Create a new vertex buffer with similar configuration, but
                 // with the capacity of number of unique vertices
-                Buffer buffer = VertexBuffer.createBuffer(oldVb.getFormat(), oldVb.getNumComponents(), newNumVerts);
-                newVb.setupData(oldVb.getUsage(), oldVb.getNumComponents(), oldVb.getFormat(), buffer);
+                Buffer buffer = VertexBuffer.createBuffer(oldVb.getFormat(),
+                        oldVb.getNumComponents(), newNumVerts);
+                newVb.setupData(oldVb.getUsage(), oldVb.getNumComponents(),
+                        oldVb.getFormat(), buffer);
 
                 // Copy the vertex data from the old buffer into the new buffer
                 for (int i = 0; i < newNumVerts; i++) {
@@ -1332,14 +1336,14 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         // Copy max weights per vertex as well
         setMaxNumWeights(other.getMaxNumWeights());
 
-        // The data has been copied over, update informations
+        // The data has been copied over, update information
         updateCounts();
         updateBound();
     }
 
     /**
-     * Scales the texture coordinate buffer on this mesh by the given
-     * scale factor.
+     * Scales the texture coordinate buffer on this mesh by the given scale
+     * factor.
      * <p>
      * Note that values above 1 will cause the
      * texture to tile, while values below 1 will cause the texture
@@ -1354,7 +1358,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @throws UnsupportedOperationException If the texture coordinate
      * buffer is not in 2D float format.
      */
-    public void scaleTextureCoordinates(Vector2f scaleFactor){
+    public void scaleTextureCoordinates(Vector2f scaleFactor) {
         VertexBuffer tc = getBuffer(Type.TexCoord);
         if (tc == null) {
             throw new IllegalStateException("The mesh has no texture coordinates");
@@ -1370,10 +1374,10 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
 
         FloatBuffer fb = (FloatBuffer) tc.getData();
         fb.clear();
-        for (int i = 0; i < fb.limit() / 2; i++){
+        for (int i = 0; i < fb.limit() / 2; i++) {
             float x = fb.get();
             float y = fb.get();
-            fb.position(fb.position()-2);
+            fb.position(fb.position() - 2);
             x *= scaleFactor.getX();
             y *= scaleFactor.getY();
             fb.put(x).put(y);
@@ -1387,10 +1391,10 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * The method does nothing if the mesh has no {@link Type#Position} buffer.
      * It is expected that the position buffer is a float buffer with 3 components.
      */
-    public void updateBound(){
+    public void updateBound() {
         VertexBuffer posBuf = getBuffer(VertexBuffer.Type.Position);
-        if (meshBound != null && posBuf != null){
-            meshBound.computeFromPoints((FloatBuffer)posBuf.getData());
+        if (meshBound != null && posBuf != null) {
+            meshBound.computeFromPoints((FloatBuffer) posBuf.getData());
         }
     }
 
@@ -1423,7 +1427,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @return map of vertex buffers on this mesh.
      */
-    public IntMap<VertexBuffer> getBuffers(){
+    public IntMap<VertexBuffer> getBuffers() {
         return buffers;
     }
 
@@ -1436,7 +1440,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      *
      * @return list of vertex buffers on this mesh.
      */
-    public SafeArrayList<VertexBuffer> getBufferList(){
+    public SafeArrayList<VertexBuffer> getBufferList() {
         return buffersList;
     }
 
@@ -1449,13 +1453,13 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
      * @return true if the mesh uses bone animation, false otherwise
      */
     public boolean isAnimated() {
-        return getBuffer(Type.BoneIndex) != null ||
-               getBuffer(Type.HWBoneIndex) != null;
+        return getBuffer(Type.BoneIndex) != null
+                || getBuffer(Type.HWBoneIndex) != null;
     }
 
     /**
      * @deprecated use isAnimatedByJoint
-     * @param boneIndex
+     * @param boneIndex the bone's index in its skeleton
      * @return true if animated by that bone, otherwise false
      */
     @Deprecated
@@ -1504,7 +1508,8 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
 
     /**
      * Sets the count of vertices used for each tessellation patch
-     * @param patchVertexCount
+     *
+     * @param patchVertexCount the desired count
      */
     public void setPatchVertexCount(int patchVertexCount) {
         this.patchVertexCount = patchVertexCount;
@@ -1512,12 +1517,12 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
 
     /**
      * Gets the amount of vertices used for each patch;
+     *
      * @return the count (&ge;0)
      */
     public int getPatchVertexCount() {
         return patchVertexCount;
     }
-
 
     public void addMorphTarget(MorphTarget target) {
         if (morphTargets == null) {
@@ -1526,17 +1531,55 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         morphTargets.add(target);
     }
 
-    public MorphTarget[] getMorphTargets() {
-        return morphTargets.getArray();
+    /**
+     * Remove the given MorphTarget from the Mesh
+     * @param target The MorphTarget to remove
+     * @return If the MorphTarget was removed
+     */
+    public boolean removeMorphTarget(MorphTarget target) {
+        return morphTargets != null ? morphTargets.remove(target) : false;
     }
-    
+
+    /**
+     * Remove the MorphTarget from the Mesh at the given index
+     * @throws IndexOutOfBoundsException if the index outside the number of morph targets
+     * @param index Index of the MorphTarget to remove
+     * @return The MorphTarget that was removed
+     */
+    public MorphTarget removeMorphTarget(int index) {
+        if (morphTargets == null) {
+            throw new IndexOutOfBoundsException("Index:" + index + ", Size:0");
+        }
+        return morphTargets.remove(index);
+    }
+
+    /**
+     * Get the MorphTarget at the given index
+     * @throws IndexOutOfBoundsException if the index outside the number of morph targets
+     * @param index The index of the morph target to get
+     * @return The MorphTarget at the index
+     */
+    public MorphTarget getMorphTarget(int index) {
+        if (morphTargets == null) {
+            throw new IndexOutOfBoundsException("Index:" + index + ", Size:0");
+        }
+        return morphTargets.get(index);
+    }
+
+    public MorphTarget[] getMorphTargets() {
+        if (morphTargets == null) {
+            return new MorphTarget[0];
+        } else {
+            return morphTargets.getArray();
+        }
+    }
+
     /**
      * Get the name of all morphs in order.
      * Morphs without names will be null
      * @return an array
      */
     public String[] getMorphTargetNames() {
-        
         MorphTarget[] nbMorphTargets = getMorphTargets();
         if (nbMorphTargets.length == 0) {
             return new String[0];
@@ -1552,11 +1595,12 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     public boolean hasMorphTargets() {
         return morphTargets != null && !morphTargets.isEmpty();
     }
-    
+
     /**
      * Get the index of the morph that has the given name.
+     *
      * @param morphName The name of the morph to search for
-     * @return The index of the morph, or -1 if not found. 
+     * @return The index of the morph, or -1 if not found.
      */
     public int getMorphIndex(String morphName) {
         int index = -1;
@@ -1571,6 +1615,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule out = ex.getCapsule(this);
 
@@ -1614,6 +1659,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void read(JmeImporter im) throws IOException {
         InputCapsule in = im.getCapsule(this);
         meshBound = (BoundingVolume) in.readSavable("modelBound", null);
@@ -1631,12 +1677,12 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
 
 //        in.readStringSavableMap("buffers", null);
         buffers = (IntMap<VertexBuffer>) in.readIntSavableMap("buffers", null);
-        for (Entry<VertexBuffer> entry : buffers){
+        for (Entry<VertexBuffer> entry : buffers) {
             buffersList.add(entry.getValue());
         }
 
         //creating hw animation buffers empty so that they are put in the cache
-        if(isAnimated()){
+        if (isAnimated()) {
             VertexBuffer hwBoneIndex = new VertexBuffer(Type.HWBoneIndex);
             hwBoneIndex.setUsage(Usage.CpuOnly);
             setBuffer(hwBoneIndex);
@@ -1648,7 +1694,7 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
         Savable[] lodLevelsSavable = in.readSavableArray("lodLevels", null);
         if (lodLevelsSavable != null) {
             lodLevels = new VertexBuffer[lodLevelsSavable.length];
-            System.arraycopy( lodLevelsSavable, 0, lodLevels, 0, lodLevels.length);
+            System.arraycopy(lodLevelsSavable, 0, lodLevels, 0, lodLevels.length);
         }
 
         ArrayList<Savable> l = in.readSavableArrayList("morphTargets", null);
@@ -1656,5 +1702,4 @@ public class Mesh implements Savable, Cloneable, JmeCloneable {
             morphTargets = new SafeArrayList(MorphTarget.class, l);
         }
     }
-
 }

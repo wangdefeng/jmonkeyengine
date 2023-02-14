@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,12 @@ public class DXTFlipper {
 
     static {
         bb.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * A private constructor to inhibit instantiation of this class.
+     */
+    private DXTFlipper() {
     }
 
     private static long readCode5(long data, int x, int y){
@@ -198,8 +204,8 @@ public class DXTFlipper {
 
     public static ByteBuffer flipDXT(ByteBuffer img, int w, int h, Format format){
         int originalLimit = img.limit();
-        int blocksX = (int) FastMath.ceil((float)w / 4f);
-        int blocksY = (int) FastMath.ceil((float)h / 4f);
+        int blocksX = (int) FastMath.ceil(w / 4f);
+        int blocksY = (int) FastMath.ceil(h / 4f);
 
         int type;
         switch (format){
@@ -214,13 +220,15 @@ public class DXTFlipper {
                 type = 3;
                 break;
             case RGTC2:
+            case SIGNED_RGTC2:
                 type = 4;
                 break;                
             case RGTC1:
+            case SIGNED_RGTC1:
                 type = 5;
                 break;
             default:
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("No flip support for texture format " + format);
         }
 
         // DXT1 uses 8 bytes per block,
@@ -235,7 +243,7 @@ public class DXTFlipper {
             byte[] colorBlock = new byte[8];
             byte[] alphaBlock = type != 1 && type != 5 ? new byte[8] : null;
             for (int x = 0; x < blocksX; x++){
-                // prepeare for block reading
+                // prepare for block reading
                 int blockByteOffset = x * bpb;
                 img.position(blockByteOffset);
                 img.limit(blockByteOffset + bpb);
@@ -270,7 +278,7 @@ public class DXTFlipper {
             byte[] alphaBlock = type != 1 && type != 5 ? new byte[8] : null;
             for (int y = 0; y < blocksY; y++){
                 for (int x = 0; x < blocksX; x++){
-                    // prepeare for block reading
+                    // prepare for block reading
                     int blockIdx = y * blocksX + x;
                     int blockByteOffset = blockIdx * bpb;
 

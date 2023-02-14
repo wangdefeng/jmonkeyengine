@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,11 +56,14 @@ public abstract class CollisionShape implements Savable {
      */
     protected float margin = defaultMargin;
 
-    public CollisionShape() {
+    protected CollisionShape() {
     }
 
     /**
      * used internally, not safe
+     * 
+     * @param mass the desired mass for the body
+     * @param vector storage for the result (not null, modified)
      */
     public void calculateLocalInertia(float mass, javax.vecmath.Vector3f vector) {
         if (cShape == null) {
@@ -75,6 +78,8 @@ public abstract class CollisionShape implements Savable {
 
     /**
      * used internally
+     *
+     * @return the pre-existing instance
      */
     public com.bulletphysics.collision.shapes.CollisionShape getCShape() {
         return cShape;
@@ -82,6 +87,8 @@ public abstract class CollisionShape implements Savable {
 
     /**
      * used internally
+     *
+     * @param cShape the shape to use (alias created)
      */
     public void setCShape(com.bulletphysics.collision.shapes.CollisionShape cShape) {
         this.cShape = cShape;
@@ -125,12 +132,14 @@ public abstract class CollisionShape implements Savable {
         return scale;
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule capsule = ex.getCapsule(this);
         capsule.write(scale, "scale", new Vector3f(1, 1, 1));
         capsule.write(getMargin(), "margin", 0.0f);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule capsule = im.getCapsule(this);
         this.scale = (Vector3f) capsule.readSavable("scale", new Vector3f(1, 1, 1));

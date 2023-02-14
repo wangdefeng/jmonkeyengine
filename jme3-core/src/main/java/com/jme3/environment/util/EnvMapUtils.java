@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,8 +49,8 @@ import static com.jme3.math.FastMath.*;
 
 /**
  *
- * This class holds several utility method unseful for Physically Based
- * Rendering. It alloaws to compute useful pre filtered maps from an env map.
+ * This class holds several utility method useful for Physically Based
+ * Rendering. It allows us to compute useful prefiltered maps from an env map.
  *
  * @author Nehon
  */
@@ -91,6 +91,12 @@ public class EnvMapUtils {
     }
 
     /**
+     * A private constructor to inhibit instantiation of this class.
+     */
+    private EnvMapUtils() {
+    }
+
+    /**
      * Creates a cube map from 6 images
      *
      * @param leftImg the west side image, also called negative x (negX) or left
@@ -99,7 +105,7 @@ public class EnvMapUtils {
      * right image
      * @param downImg the bottom side image, also called negative y (negY) or
      * down image
-     * @param upImg the up side image, also called positive y (posY) or up image
+     * @param upImg the top side image, also called positive y (posY) or up image
      * @param backImg the south side image, also called positive z (posZ) or
      * back image
      * @param frontImg the north side image, also called negative z (negZ) or
@@ -141,7 +147,7 @@ public class EnvMapUtils {
      * the same area of the buffer. The position, limit and mark are not an
      * issue.
      *
-     * @param sourceMap
+     * @param sourceMap the map to be copied (not null, unaffected)
      * @return a new instance
      */
     public static TextureCubeMap duplicateCubeMap(TextureCubeMap sourceMap) {
@@ -174,7 +180,7 @@ public class EnvMapUtils {
      *
      *
      * Original solid angle calculation code is from Ignacio Castaño. This
-     * formula is from Manne Öhrström's thesis. It takes two coordiantes in the
+     * formula is from Manne Öhrström's thesis. It takes two coordinates in the
      * range [-1, 1] that define a portion of a cube face and return the area of
      * the projection of that portion on the surface of the sphere.
      *
@@ -194,8 +200,8 @@ public class EnvMapUtils {
 
         /* transform from [0..res - 1] to [- (1 - 1 / res) .. (1 - 1 / res)]
          (+ 0.5f is for texel center addressing) */
-        float u = (2.0f * ((float) x + 0.5f) / (float) mapSize) - 1.0f;
-        float v = (2.0f * ((float) y + 0.5f) / (float) mapSize) - 1.0f;
+        float u = (2.0f * (x + 0.5f) / mapSize) - 1.0f;
+        float v = (2.0f * (y + 0.5f) / mapSize) - 1.0f;
 
         getVectorFromCubemapFaceTexCoord(x, y, mapSize, face, store, fixSeamsMethod);
 
@@ -203,7 +209,7 @@ public class EnvMapUtils {
          * U and V are the -1..1 texture coordinate on the current face.
          * Get projected area for this texel */
         float x0, y0, x1, y1;
-        float invRes = 1.0f / (float) mapSize;
+        float invRes = 1.0f / mapSize;
         x0 = u - invRes;
         y0 = v - invRes;
         x1 = u + invRes;
@@ -246,19 +252,19 @@ public class EnvMapUtils {
         if (fixSeamsMethod == FixSeamsMethod.Stretch) {
             /* Code from Nvtt : https://github.com/castano/nvidia-texture-tools/blob/master/src/nvtt/CubeSurface.cpp#L77
              * transform from [0..res - 1] to [-1 .. 1], match up edges exactly. */
-            u = (2.0f * (float) x / ((float) mapSize - 1.0f)) - 1.0f;
-            v = (2.0f * (float) y / ((float) mapSize - 1.0f)) - 1.0f;
+            u = (2.0f * x / (mapSize - 1.0f)) - 1.0f;
+            v = (2.0f * y / (mapSize - 1.0f)) - 1.0f;
         } else {
             //Done if any other fix method or no fix method is set
             /* transform from [0..res - 1] to [- (1 - 1 / res) .. (1 - 1 / res)]
              * (+ 0.5f is for texel center addressing) */
-            u = (2.0f * ((float) x + 0.5f) / (float) (mapSize)) - 1.0f;
-            v = (2.0f * ((float) y + 0.5f) / (float) (mapSize)) - 1.0f;
+            u = (2.0f * (x + 0.5f) / mapSize) - 1.0f;
+            v = (2.0f * (y + 0.5f) / mapSize) - 1.0f;
         }
 
         if (fixSeamsMethod == FixSeamsMethod.Wrap) {
             // Warp texel centers in the proximity of the edges.
-            float a = pow((float) mapSize, 2.0f) / pow(((float) mapSize - 1f), 3.0f);
+            float a = pow(mapSize, 2.0f) / pow(mapSize - 1f, 3.0f);
             u = a * pow(u, 3f) + u;
             v = a * pow(v, 3f) + v;
         }
@@ -291,10 +297,10 @@ public class EnvMapUtils {
 
     /**
      *
-     * Computes the texture coortinates and the face of the cube map from the
+     * Computes the texture coordinates and the face of the cube map from the
      * given vector
      *
-     * @param texelVect the vector to fetch texelt from the cube map
+     * @param texelVect the vector to fetch texels from the cube map
      * @param fixSeamsMethod the method to fix the seams
      * @param mapSize the size of one face of the cube map
      * @param store a Vector2f where the texture coordinates will be stored
@@ -317,7 +323,7 @@ public class EnvMapUtils {
         }
 
         //compute vector depending on the face
-        // Code from Nvtt : http://code.google.com/p/nvidia-texture-tools/source/browse/trunk/src/nvtt/CubeSurface.cpp	
+        // Code from Nvtt : http://code.google.com/p/nvidia-texture-tools/source/browse/trunk/src/nvtt/CubeSurface.cpp
         switch (face) {
             case 0:
                 //store.set(1f, -v, -u, 0);
@@ -360,16 +366,16 @@ public class EnvMapUtils {
         v *= bias;
 
         if (fixSeamsMethod == FixSeamsMethod.Stretch) {
-            /* Code from Nvtt : http://code.google.com/p/nvidia-texture-tools/source/browse/trunk/src/nvtt/CubeSurface.cpp		
+            /* Code from Nvtt : http://code.google.com/p/nvidia-texture-tools/source/browse/trunk/src/nvtt/CubeSurface.cpp
              * transform from [0..res - 1] to [-1 .. 1], match up edges exactly. */
-            u = Math.round((u + 1.0f) * ((float) mapSize - 1.0f) * 0.5f);
-            v = Math.round((v + 1.0f) * ((float) mapSize - 1.0f) * 0.5f);
+            u = Math.round((u + 1.0f) * (mapSize - 1.0f) * 0.5f);
+            v = Math.round((v + 1.0f) * (mapSize - 1.0f) * 0.5f);
         } else {
             //Done if any other fix method or no fix method is set
             /* transform from [0..res - 1] to [- (1 - 1 / res) .. (1 - 1 / res)]
              * (+ 0.5f is for texel center addressing) */
-            u = Math.round((u + 1.0f) * ((float) mapSize) * 0.5f - 0.5f);
-            v = Math.round((v + 1.0f) * ((float) mapSize) * 0.5f - 0.5f);
+            u = Math.round((u + 1.0f) * mapSize * 0.5f - 0.5f);
+            v = Math.round((v + 1.0f) * mapSize * 0.5f - 0.5f);
 
         }
 
@@ -382,11 +388,11 @@ public class EnvMapUtils {
     }
 
 
-    //see lagarde's paper https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
+    //see Lagarde's paper https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
     //linear roughness
-    public static float getRoughnessFromMip(int miplevel, int miptot) {
+    public static float getRoughnessFromMip(int mipLevel, int miptot) {
         float step = 1f / ((float) miptot - 1);
-        step *= miplevel;
+        step *= mipLevel;
         return step * step;
     }
 
@@ -410,10 +416,10 @@ public class EnvMapUtils {
     /**
      * Returns the Spherical Harmonics coefficients for this cube map.
      *
-     * The method used is the one from this article :
+     * The method used is the one from this article:
      * http://graphics.stanford.edu/papers/envmap/envmap.pdf
      *
-     * Also good resources on spherical harmonics
+     * Another good resource for spherical harmonics:
      * http://dickyjim.wordpress.com/2013/09/04/spherical-harmonics-for-beginners/
      *
      * @param cubeMap the environment cube map to compute SH for
@@ -479,8 +485,8 @@ public class EnvMapUtils {
      * Computes SH coefficient for a given textel dir The method used is the one
      * from this article : http://graphics.stanford.edu/papers/envmap/envmap.pdf
      *
-     * @param texelVect
-     * @param shDir
+     * @param texelVect the input texel (not null, unaffected)
+     * @param shDir storage for the results
      */
     public static void evalShBasis(Vector3f texelVect, float[] shDir) {
 
@@ -533,7 +539,7 @@ public class EnvMapUtils {
         }
         float phi;
         long ui = i;
-        store.setX((float) i / (float) nbrSample);
+        store.setX(i / (float) nbrSample);
 
         /* From http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
          * Radical Inverse : Van der Corput */
@@ -544,7 +550,7 @@ public class EnvMapUtils {
         ui = ((ui & 0x00FF00FF) << 8) | ((ui & 0xFF00FF00) >>> 8);
 
         ui = ui & 0xffffffff;
-        store.setY(2.3283064365386963e-10f * (float) (ui)); /* 0x100000000 */
+        store.setY(2.3283064365386963e-10f * ui); /* 0x100000000 */
 
         phi = 2.0f * PI * store.y;
         store.setZ(cos(phi));
@@ -611,7 +617,7 @@ public class EnvMapUtils {
         int size = cubeMap.getImage().getWidth();
         Picture[] pics = new Picture[6];
 
-        float ratio = 128f / (float) size;
+        float ratio = 128f / size;
 
         for (int i = 0; i < 6; i++) {
             pics[i] = new Picture("bla");
@@ -710,7 +716,7 @@ public class EnvMapUtils {
     }
     
      /**
-     * initialize the Irradiancemap
+     * initialize the irradiance map
      * @param size the size of the map
      * @param imageFormat the format of the image
      * @return the initialized Irradiance map

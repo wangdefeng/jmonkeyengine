@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,6 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
-import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Quaternion;
@@ -45,7 +44,6 @@ import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
-import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
@@ -54,16 +52,12 @@ import com.jme3.util.TangentBinormalGenerator;
 
 public class TestShadowsPerf extends SimpleApplication {
 
-    float angle;
-    PointLight pl;
-    Spatial lightMdl;
-
     public static void main(String[] args) {
         TestShadowsPerf app = new TestShadowsPerf();
         app.start();
     }
-    Geometry sphere;
-    Material mat;
+    private Geometry sphere;
+    private Material mat;
 
     @Override
     public void simpleInitApp() {
@@ -111,7 +105,7 @@ public class TestShadowsPerf extends SimpleApplication {
         rootNode.addLight(al);
         //rootNode.setShadowMode(ShadowMode.CastAndReceive);
 
-        createballs();
+        createBalls();
 
         final DirectionalLightShadowRenderer pssmRenderer = new DirectionalLightShadowRenderer(assetManager, 1024, 4);
         viewPort.addProcessor(pssmRenderer);
@@ -130,22 +124,23 @@ public class TestShadowsPerf extends SimpleApplication {
 
         inputManager.addListener(new ActionListener() {
 
+            @Override
             public void onAction(String name, boolean isPressed, float tpf) {
                 if (name.equals("display") && isPressed) {
                      //pssmRenderer.debugFrustrums();
                     System.out.println("tetetetet");
                 }
                 if (name.equals("add") && isPressed) {
-                    createballs();
+                    createBalls();
                 }
             }
         }, "display", "add");
         inputManager.addMapping("display", new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping("add", new KeyTrigger(KeyInput.KEY_RETURN));
     }
-    int val = 0;
+    private int val = 0;
 
-    private void createballs() {
+    private void createBalls() {
         System.out.println((frames / time) + ";" + val);
 
 
@@ -164,15 +159,15 @@ public class TestShadowsPerf extends SimpleApplication {
         time = 0;
         frames = 0;
     }
-    float time;
-    float frames = 0;
+    private float time;
+    private float frames = 0;
 
     @Override
     public void simpleUpdate(float tpf) {
         time += tpf;
         frames++;
         if (time > 1) {
-            createballs();
+            createBalls();
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -81,8 +81,6 @@ public class TimeLine extends HashMap<Integer, KeyFrame> implements Savable {
             }
         }
     }
-    
-    
 
     public void removeKeyFrame(float time) {
         removeKeyFrame(getKeyFrameIndexFromTime(time));
@@ -91,9 +89,9 @@ public class TimeLine extends HashMap<Integer, KeyFrame> implements Savable {
     public int getKeyFrameIndexFromTime(float time) {
         return Math.round(time * keyFramesPerSeconds);
     }
-    
+
     public float getKeyFrameTime(KeyFrame keyFrame) {
-        return (float)keyFrame.getIndex()/(float)keyFramesPerSeconds;
+        return keyFrame.getIndex() / (float) keyFramesPerSeconds;
     }
 
     public Collection<KeyFrame> getAllKeyFrames() {
@@ -104,6 +102,8 @@ public class TimeLine extends HashMap<Integer, KeyFrame> implements Savable {
         return lastKeyFrameIndex;
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule oc = ex.getCapsule(this);
         ArrayList list = new ArrayList();
@@ -111,6 +111,7 @@ public class TimeLine extends HashMap<Integer, KeyFrame> implements Savable {
         oc.writeSavableArrayList(list, "keyFrames", null);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule ic = im.getCapsule(this);
         ArrayList list = ic.readSavableArrayList("keyFrames", null);

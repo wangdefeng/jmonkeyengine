@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,8 +44,7 @@ import java.util.logging.Logger;
  * The <code>ClasspathLocator</code> looks up an asset in the classpath.
  * 
  * This locator is used by default in all jME3 projects (unless 
- * {@link AssetManager#unregisterLocator(java.lang.String, java.lang.Class) unregistered}
- * ).
+ * {@link AssetManager#unregisterLocator(java.lang.String, java.lang.Class) unregistered}).
  * Unlike Java's default resource loading mechanism, the <code>ClasspathLocator</code>
  * enforces case-sensitivity on platforms which do not have it such as Windows.
  * Therefore, it is critical to provide a path matching the case of the file on
@@ -62,6 +61,7 @@ public class ClasspathLocator implements AssetLocator {
     public ClasspathLocator(){
     }
 
+    @Override
     public void setRootPath(String rootPath) {
         this.root = rootPath;
         if (root.equals("/"))
@@ -75,6 +75,7 @@ public class ClasspathLocator implements AssetLocator {
         }
     }
     
+    @Override
     public AssetInfo locate(AssetManager manager, AssetKey key) {
         URL url;
         String name = key.getName();

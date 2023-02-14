@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,6 +71,7 @@ public final class TGALoader implements AssetLoader {
     // 11 - run-length encoded, black and white image
     public static final int TYPE_BLACKANDWHITE_RLE = 11;
 
+    @Override
     public Object load(AssetInfo info) throws IOException {
         if (!(info.getKey() instanceof TextureKey)) {
             throw new IllegalArgumentException("Texture assets must be loaded using a TextureKey");
@@ -101,7 +102,7 @@ public final class TGALoader implements AssetLoader {
      *            Flip the image vertically
      * @return <code>Image</code> object that contains the
      *         image, either as a RGB888 or RGBA8888
-     * @throws java.io.IOException
+     * @throws java.io.IOException if an I/O error occurs
      */
     public static Image load(InputStream in, boolean flip) throws IOException {
         boolean flipH = false;
@@ -298,7 +299,7 @@ public final class TGALoader implements AssetLoader {
                         // Get the number of pixels the next chunk covers (either packed or unpacked)
                         int count = dis.readByte();
                         if ((count & 0x80) != 0) {
-                            // Its an RLE packed block - use the following 1 pixel for the next <count> pixels
+                            // It's an RLE-packed block: use the following pixel for the next <count> pixels.
                             count &= 0x07f;
                             j += count;
                             blue = dis.readByte();
@@ -337,7 +338,7 @@ public final class TGALoader implements AssetLoader {
                         // Get the number of pixels the next chunk covers (either packed or unpacked)
                         int count = dis.readByte();
                         if ((count & 0x80) != 0) {
-                            // Its an RLE packed block - use the following 1 pixel for the next <count> pixels
+                            // It's an RLE-packed block: use the following pixel for the next <count> pixels.
                             count &= 0x07f;
                             j += count;
                             blue = dis.readByte();
@@ -374,7 +375,7 @@ public final class TGALoader implements AssetLoader {
                         // Get the number of pixels the next chunk covers (either packed or unpacked)
                         int count = dis.readByte();
                         if ((count & 0x80) != 0) {
-                            // Its an RLE packed block - use the following 1 pixel for the next <count> pixels
+                            // It's an RLE-packed block: use the following pixel for the next <count> pixels.
                             count &= 0x07f;
                             j += count;
                             data[1] = dis.readByte();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,21 +40,30 @@ import com.jme3.input.controls.JoyAxisTrigger;
  */
 public class DefaultJoystickAxis implements JoystickAxis {
 
-    private InputManager inputManager;
-    private Joystick parent;
-    private int axisIndex;
-    private String name;
-    private String logicalId;
-    private boolean isAnalog;
-    private boolean isRelative;
+    final private InputManager inputManager;
+    final private Joystick parent;
+    final private int axisIndex;
+    final private String name;
+    final private String logicalId;
+    final private boolean isAnalog;
+    final private boolean isRelative;
     private float deadZone;
 
     /**
      *  Creates a new joystick axis instance. Only used internally.
+     *
+     * @param inputManager (alias created)
+     * @param parent (alias created)
+     * @param axisIndex index for the new axis
+     * @param name name for the new axis
+     * @param logicalId logical identifier for the new axis
+     * @param isAnalog true&rarr;continuous range, false&rarr;discrete values
+     * @param isRelative true&rarr;presents relative values
+     * @param deadZone the radius of the dead zone
      */
     public DefaultJoystickAxis(InputManager inputManager, Joystick parent,
-                               int axisIndex, String name, String logicalId,
-                               boolean isAnalog, boolean isRelative, float deadZone ) {
+            int axisIndex, String name, String logicalId,
+            boolean isAnalog, boolean isRelative, float deadZone) {
         this.inputManager = inputManager;
         this.parent = parent;
         this.axisIndex = axisIndex;
@@ -71,7 +80,8 @@ public class DefaultJoystickAxis implements JoystickAxis {
      *  @param positiveMapping The mapping to receive events when the axis is negative
      *  @param negativeMapping The mapping to receive events when the axis is positive
      */
-    public void assignAxis(String positiveMapping, String negativeMapping){
+    @Override
+    public void assignAxis(String positiveMapping, String negativeMapping) {
         if (axisIndex != -1) {
             inputManager.addMapping(positiveMapping, new JoyAxisTrigger(parent.getJoyId(), axisIndex, false));
             inputManager.addMapping(negativeMapping, new JoyAxisTrigger(parent.getJoyId(), axisIndex, true));
@@ -81,6 +91,7 @@ public class DefaultJoystickAxis implements JoystickAxis {
     /**
      *  Returns the joystick to which this axis object belongs.
      */
+    @Override
     public Joystick getJoystick() {
         return parent;
     }
@@ -90,6 +101,7 @@ public class DefaultJoystickAxis implements JoystickAxis {
      *
      *  @return the name of this joystick.
      */
+    @Override
     public String getName() {
         return name;
     }
@@ -99,15 +111,17 @@ public class DefaultJoystickAxis implements JoystickAxis {
      *
      *  @return the logical identifier of this joystick.
      */
+    @Override
     public String getLogicalId() {
         return logicalId;
-    }    
+    }
 
     /**
      *  Returns the axisId of this joystick axis.
      *
      *  @return the axisId of this joystick axis.
      */
+    @Override
     public int getAxisId() {
         return axisIndex;
     }
@@ -116,36 +130,41 @@ public class DefaultJoystickAxis implements JoystickAxis {
      *  Returns true if this is an analog axis, meaning the values
      *  are a continuous range instead of 1, 0, and -1.
      */
+    @Override
     public boolean isAnalog() {
         return isAnalog;
     }
-    
+
     /**
      *  Returns true if this axis presents relative values.
      */
+    @Override
     public boolean isRelative() {
         return isRelative;
     }
-    
+
     /**
      *  Returns the suggested dead zone for this axis.  Values less than this
      *  can be safely ignored.
      */
+    @Override
     public float getDeadZone() {
         return deadZone;
-    }        
+    }
 
     /**
      *  Sets/overrides the dead zone for this axis.  This indicates that values
      *  within +/- deadZone should be ignored.
+     *
+     * @param f the desired radius
      */
-    public void setDeadZone( float f ) {
+    public void setDeadZone(float f) {
         this.deadZone = f;
-    }     
+    }
 
     @Override
-    public String toString(){
-        return "JoystickAxis[name=" + name + ", parent=" + parent.getName() + ", id=" + axisIndex 
+    public String toString() {
+        return "JoystickAxis[name=" + name + ", parent=" + parent.getName() + ", id=" + axisIndex
                                     + ", logicalId=" + logicalId + ", isAnalog=" + isAnalog
                                     + ", isRelative=" + isRelative + ", deadZone=" + deadZone + "]";
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 jMonkeyEngine
+ * Copyright (c) 2016-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,21 +42,23 @@ import java.util.List;
  */
 public class ListCloneFunction<T extends List> implements CloneFunction<T> {
 
-    public T cloneObject( Cloner cloner, T object ) {         
+    @Override
+    public T cloneObject(Cloner cloner, T object) {
         try {
-            T clone = cloner.javaClone(object);         
+            T clone = cloner.javaClone(object);
             return clone;
-        } catch( CloneNotSupportedException e ) {
+        } catch (CloneNotSupportedException e) {
             throw new IllegalArgumentException("Clone not supported for type:" + object.getClass(), e);
         }
     }
-     
+
     /**
      *  Clones the elements of the list.
-     */    
+     */
     @SuppressWarnings("unchecked")
-    public void cloneFields( Cloner cloner, T clone, T object ) {
-        for( int i = 0; i < clone.size(); i++ ) {
+    @Override
+    public void cloneFields(Cloner cloner, T clone, T object) {
+        for (int i = 0; i < clone.size(); i++) {
             // Need to clone the clones... because T might
             // have done something special in its clone method that
             // we will have to adhere to.  For example, clone may have nulled

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
+/** 
  * This test class tests the capability to read and modify an OpenGL vertex buffer.
  * It is also shown how to use the program binaries to implement a simple program
  * cache.
@@ -72,7 +72,7 @@ public class TestVertexBufferSharing extends SimpleApplication {
         AppSettings settings = new AppSettings(true);
         settings.setOpenCLSupport(true);
         settings.setVSync(false);
-//        settings.setRenderer(AppSettings.JOGL_OPENGL_FORWARD_COMPATIBLE);
+        settings.setRenderer(AppSettings.LWJGL_OPENGL2);
         app.setSettings(settings);
         app.start(); // start the game
     }
@@ -155,7 +155,7 @@ public class TestVertexBufferSharing extends SimpleApplication {
             }
             LOG.info("create new program from sources");
         }
-		program.register();
+        program.register();
         kernel = program.createKernel("ScaleKernel").register();
     }
     private void initOpenCL2() {
@@ -168,9 +168,9 @@ public class TestVertexBufferSharing extends SimpleApplication {
         //advect time
         time += tpf;
         
-        //aquire resource
+        //acquire resource
         buffer.acquireBufferForSharingNoEvent(clQueue);
-        //no need to wait for the returned event, since the kernel implicitely waits for it (same command queue)
+        //no need to wait for the returned event, since the kernel implicitly waits for it (same command queue)
         
         //execute kernel
         float scale = (float) Math.pow(1.1, (1.0 - time%2) / 16.0);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ import java.util.logging.Logger;
 
 /**
  * <p>
- * TerrainGrid itself is an actual TerrainQuad. Its four children are the visible four tiles.</p>
+ * TerrainGrid itself is an actual TerrainQuad. Its four children are the visible four tiles.
  * </p><p>
  * The grid is indexed by cells. Each cell has an integer XZ coordinate originating at 0,0.
  * TerrainGrid will piggyback on the TerrainLodControl so it can use the camera for its
@@ -92,7 +92,7 @@ import java.util.logging.Logger;
  * an empty (non-loaded) area, it will trigger the system to load in the next tiles.
  * </p><p>
  * The tile loading is done on a background thread, and once the tile is loaded, then it is
- * attached to the qrid quad tree, back on the OGL thread. It will grab the terrain quad from
+ * attached to the grid quad tree, back on the OGL thread. It will grab the terrain quad from
  * the LRU cache if it exists. If it does not exist, it will load in the new TerrainQuad tile.
  * </p><p>
  * The loading of new tiles triggers events for any TerrainGridListeners. The events are:
@@ -114,10 +114,10 @@ public class TerrainGrid extends TerrainQuad {
     protected int quadSize;
     private TerrainGridTileLoader gridTileLoader;
     protected Vector3f[] quadIndex;
-    protected Set<TerrainGridListener> listeners = new HashSet<TerrainGridListener>();
+    protected Set<TerrainGridListener> listeners = new HashSet<>();
     protected Material material;
     //cache  needs to be 1 row (4 cells) larger than what we care is cached
-    protected LRUCache<Vector3f, TerrainQuad> cache = new LRUCache<Vector3f, TerrainQuad>(20);
+    protected LRUCache<Vector3f, TerrainQuad> cache = new LRUCache<>(20);
     protected int cellsLoaded = 0;
     protected int[] gridOffset;
     protected boolean runOnce = false;
@@ -140,6 +140,7 @@ public class TerrainGrid extends TerrainQuad {
          * attachQuadAt() method. It also resets any cached values in TerrainQuad (such as
          * neighbours).
          */
+        @Override
         public void run() {
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j++) {
@@ -162,8 +163,9 @@ public class TerrainGrid extends TerrainQuad {
                     
                     if (isCenter(quadIdx)) {
                         // if it should be attached as a child right now, attach it
-                        getControl(UpdateControl.class).enqueue(new Callable() {
+                        getControl(UpdateControl.class).enqueue(new Callable<Object>() {
                             // back on the OpenGL thread:
+                            @Override
                             public Object call() throws Exception {
                                 if (newQuad.getParent() != null) {
                                     attachQuadAt(newQuad, quadrant, quadCell, true);
@@ -175,7 +177,8 @@ public class TerrainGrid extends TerrainQuad {
                             }
                         });
                     } else {
-                        getControl(UpdateControl.class).enqueue(new Callable() {
+                        getControl(UpdateControl.class).enqueue(new Callable<Object>() {
+                            @Override
                             public Object call() throws Exception {
                                 removeQuad(newQuad);
                                 return null;
@@ -185,8 +188,9 @@ public class TerrainGrid extends TerrainQuad {
                 }
             }
 
-            getControl(UpdateControl.class).enqueue(new Callable() {
+            getControl(UpdateControl.class).enqueue(new Callable<Object>() {
                     // back on the OpenGL thread:
+                    @Override
                     public Object call() throws Exception {
                         for (Spatial s : getChildren()) {
                             if (s instanceof TerrainQuad) {
@@ -274,7 +278,7 @@ public class TerrainGrid extends TerrainQuad {
 
     /**
      * Get the location in cell-coordinates of the specified location.
-     * Cell coordinates are integer corrdinates, usually with y=0, each 
+     * Cell coordinates are integer coordinates, usually with y=0, each
      * representing a cell in the world.
      * For example, moving right in the +X direction:
      * (0,0,0) (1,0,0) (2,0,0), (3,0,0)
@@ -345,7 +349,7 @@ public class TerrainGrid extends TerrainQuad {
             }
             q.setQuadrant((short)0);
             this.detachChild(q);
-            cellsLoaded++; // For gridoffset calc., maybe the run() method is a better location for this.
+            cellsLoaded++; // For gridOffset calculation, maybe the run() method is a better location for this.
         }
     }
 
@@ -489,6 +493,7 @@ public class TerrainGrid extends TerrainQuad {
      */
     protected ExecutorService createExecutorService() {
         final ThreadFactory threadFactory = new ThreadFactory() {
+            @Override
             public Thread newThread(Runnable r) {
                 Thread th = new Thread(r);
                 th.setName("jME TerrainGrid Thread");
@@ -500,6 +505,7 @@ public class TerrainGrid extends TerrainQuad {
                                     0L, TimeUnit.MILLISECONDS,
                                     new LinkedBlockingQueue<Runnable>(), 
                                     threadFactory) {
+            @Override
             protected void afterExecute(Runnable r, Throwable t) {
                 super.afterExecute(r, t);
                 if (t == null && r instanceof Future<?>) {

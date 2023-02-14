@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ import java.util.List;
 /**
  * A
  * <code>Curve</code> is a visual, line-based representation of a {@link Spline}.
- * The underlying Spline will be sampled N times where N is the number of
+ * The underlying Spline will be sampled N times, where N is the number of
  * segments as specified in the constructor. Each segment will represent one
  * line in the generated mesh.
  *
@@ -55,7 +55,7 @@ public class Curve extends Mesh {
     /**
      * Serialization only. Do not use.
      */
-    public Curve() {
+    protected Curve() {
     }
 
     /**
@@ -198,12 +198,12 @@ public class Curve extends Mesh {
      * points
      */
     private void createNurbMesh(int nbSubSegments) {
-    	if(spline.getControlPoints() != null && spline.getControlPoints().size() > 0) {
-    		if(nbSubSegments == 0) {
-        		nbSubSegments = spline.getControlPoints().size() + 1;
-        	} else {
-        		nbSubSegments = spline.getControlPoints().size() * nbSubSegments + 1;
-        	}
+        if (spline.getControlPoints() != null && spline.getControlPoints().size() > 0) {
+            if (nbSubSegments == 0) {
+                nbSubSegments = spline.getControlPoints().size() + 1;
+            } else {
+                nbSubSegments = spline.getControlPoints().size() * nbSubSegments + 1;
+            }
             float minKnot = spline.getMinNurbKnot();
             float maxKnot = spline.getMaxNurbKnot();
             float deltaU = (maxKnot - minKnot) / nbSubSegments;
@@ -233,7 +233,7 @@ public class Curve extends Mesh {
             this.setBuffer(VertexBuffer.Type.Index, 2, indices);
             this.updateBound();
             this.updateCounts();
-    	}
+        }
     }
 
     private void createLinearMesh() {

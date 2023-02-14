@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,6 +63,11 @@ import com.jme3.util.BufferUtils;
  * @author normenhansen
  */
 public class PhysicsTestHelper {
+    /**
+     * A private constructor to inhibit instantiation of this class.
+     */
+    private PhysicsTestHelper() {
+    }
 
     /**
      * creates a simple physics test world with a floor, an obstacle and some test boxes
@@ -216,7 +221,7 @@ public class PhysicsTestHelper {
     }
 
     /**
-     * creates the necessary inputlistener and action to shoot balls from the camera
+     * creates the necessary input listener and action to shoot balls from the camera
      *
      * @param app the application that's running
      * @param rootNode where ball geometries should be added
@@ -225,6 +230,7 @@ public class PhysicsTestHelper {
     public static void createBallShooter(final Application app, final Node rootNode, final PhysicsSpace space) {
         ActionListener actionListener = new ActionListener() {
 
+            @Override
             public void onAction(String name, boolean keyPressed, float tpf) {
                 Sphere bullet = new Sphere(32, 32, 0.4f, true, false);
                 bullet.setTextureMode(TextureMode.Projected);
@@ -234,15 +240,15 @@ public class PhysicsTestHelper {
                 Texture tex2 = app.getAssetManager().loadTexture(key2);
                 mat2.setTexture("ColorMap", tex2);
                 if (name.equals("shoot") && !keyPressed) {
-                    Geometry bulletg = new Geometry("bullet", bullet);
-                    bulletg.setMaterial(mat2);
-                    bulletg.setShadowMode(ShadowMode.CastAndReceive);
-                    bulletg.setLocalTranslation(app.getCamera().getLocation());
+                    Geometry bulletGeometry = new Geometry("bullet", bullet);
+                    bulletGeometry.setMaterial(mat2);
+                    bulletGeometry.setShadowMode(ShadowMode.CastAndReceive);
+                    bulletGeometry.setLocalTranslation(app.getCamera().getLocation());
                     RigidBodyControl bulletControl = new RigidBodyControl(10);
-                    bulletg.addControl(bulletControl);
+                    bulletGeometry.addControl(bulletControl);
                     bulletControl.setLinearVelocity(app.getCamera().getDirection().mult(25));
-                    bulletg.addControl(bulletControl);
-                    rootNode.attachChild(bulletg);
+                    bulletGeometry.addControl(bulletControl);
+                    rootNode.attachChild(bulletGeometry);
                     space.add(bulletControl);
                 }
             }
@@ -259,7 +265,7 @@ public class PhysicsTestHelper {
      * @param assetManager for loading assets
      * @param floorDimensions width/depth of the "floor" (X/Z)
      * @param position sets the floor's local translation
-     * @return
+     * @return a new Geometry
      */
     public static Geometry createGImpactTestFloor(AssetManager assetManager, float floorDimensions, Vector3f position) {
         Geometry floor = createTestFloor(assetManager, floorDimensions, position, ColorRGBA.Red);
@@ -276,7 +282,7 @@ public class PhysicsTestHelper {
      * @param assetManager for loading assets
      * @param floorDimensions width/depth of the "floor" (X/Z)
      * @param position sets the floor's local translation
-     * @return
+     * @return a new Geometry
      */
     public static Geometry createMeshTestFloor(AssetManager assetManager, float floorDimensions, Vector3f position) {
         Geometry floor = createTestFloor(assetManager, floorDimensions, position, new ColorRGBA(0.5f, 0.5f, 0.9f, 1));

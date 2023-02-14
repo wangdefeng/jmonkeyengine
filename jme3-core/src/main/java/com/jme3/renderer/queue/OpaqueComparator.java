@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,30 +42,31 @@ public class OpaqueComparator implements GeometryComparator {
     private final Vector3f tempVec  = new Vector3f();
     private final Vector3f tempVec2 = new Vector3f();
 
-    public void setCamera(Camera cam){
+    @Override
+    public void setCamera(Camera cam) {
         this.cam = cam;
     }
 
-    public float distanceToCam(Geometry spat){
+    public float distanceToCam(Geometry spat) {
         if (spat == null)
             return Float.NEGATIVE_INFINITY;
- 
+
         if (spat.queueDistance != Float.NEGATIVE_INFINITY)
                 return spat.queueDistance;
- 
+
         Vector3f camPosition = cam.getLocation();
         Vector3f viewVector = cam.getDirection(tempVec2);
         Vector3f spatPosition = null;
- 
+
         if (spat.getWorldBound() != null){
             spatPosition = spat.getWorldBound().getCenter();
-        }else{
+        } else {
             spatPosition = spat.getWorldTranslation();
         }
- 
+
         spatPosition.subtract(camPosition, tempVec);
         spat.queueDistance = tempVec.dot(viewVector);
- 
+
         return spat.queueDistance;
     }
 
@@ -73,7 +74,7 @@ public class OpaqueComparator implements GeometryComparator {
     public int compare(Geometry o1, Geometry o2) {
         Material m1 = o1.getMaterial();
         Material m2 = o2.getMaterial();
-        
+
         int compareResult = Integer.compare(m1.getSortId(), m2.getSortId());
         if (compareResult == 0){
             // use the same shader.
@@ -87,9 +88,8 @@ public class OpaqueComparator implements GeometryComparator {
                 return -1;
             else
                 return 1;
-        }else{
+        } else {
             return compareResult;
         }
     }
-
 }

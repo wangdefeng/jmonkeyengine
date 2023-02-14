@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,6 +71,7 @@ public class LwjglOffscreenBuffer extends LwjglContext implements Runnable {
         height = settings.getHeight();
         try{
             Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                @Override
                 public void uncaughtException(Thread thread, Throwable thrown) {
                     listener.handleError("Uncaught exception thrown in "+thread.toString(), thrown);
                 }
@@ -118,7 +119,7 @@ public class LwjglOffscreenBuffer extends LwjglContext implements Runnable {
                 // Context MUST be reset here to avoid invalid objects!
                 renderer.invalidateState();
             } catch (LWJGLException ex) {
-                listener.handleError("Failed to restore pbuffer content", ex);
+                listener.handleError("Failed to restore PBuffer content", ex);
             }
         }
 
@@ -148,9 +149,12 @@ public class LwjglOffscreenBuffer extends LwjglContext implements Runnable {
         super.internalDestroy();
     }
 
+    @Override
     public void run(){
         loadNatives();
-        logger.log(Level.FINE, "Using LWJGL {0}", Sys.getVersion());
+        if (logger.isLoggable(Level.FINE)) {
+            logger.log(Level.FINE, "Using LWJGL {0}", Sys.getVersion());
+        }
         initInThread();
         while (!needClose.get()){
             runLoop();
@@ -158,12 +162,14 @@ public class LwjglOffscreenBuffer extends LwjglContext implements Runnable {
         deinitInThread();
     }
 
+    @Override
     public void destroy(boolean waitFor){
         needClose.set(true);
         if (waitFor)
             waitFor(false);
     }
 
+    @Override
     public void create(boolean waitFor){
         if (created.get()){
             logger.warning("create() called when pbuffer is already created!");
@@ -175,32 +181,40 @@ public class LwjglOffscreenBuffer extends LwjglContext implements Runnable {
             waitFor(true);
     }
 
+    @Override
     public void restart() {
     }
 
+    @Override
     public void setAutoFlushFrames(boolean enabled){
     }
 
+    @Override
     public Type getType() {
         return Type.OffscreenSurface;
     }
 
+    @Override
     public MouseInput getMouseInput() {
         return new DummyMouseInput();
     }
 
+    @Override
     public KeyInput getKeyInput() {
         return new DummyKeyInput();
     }
 
+    @Override
     public JoyInput getJoyInput() {
         return null;
     }
 
+    @Override
     public TouchInput getTouchInput() {
         return null;
     }
 
+    @Override
     public void setTitle(String title) {
     }
 

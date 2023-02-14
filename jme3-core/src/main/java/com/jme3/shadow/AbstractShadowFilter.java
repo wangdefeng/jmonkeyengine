@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -207,10 +207,10 @@ public abstract class AbstractShadowFilter<T extends AbstractShadowRenderer> ext
     }
 
     /**
-     * Sets the shadow edges thickness. default is 1, setting it to lower values
-     * can help to reduce the jagged effect of the shadow edges
+     * Sets the shadow edges thickness. Default is 10. Setting it to lower values
+     * can help reduce the jagged effect of shadow edges.
      *
-     * @param edgesThickness
+     * @param edgesThickness the desired thickness (in tenths of a pixel, default=10)
      */
     public void setEdgesThickness(int edgesThickness) {
         shadowRenderer.setEdgesThickness(edgesThickness);
@@ -218,6 +218,8 @@ public abstract class AbstractShadowFilter<T extends AbstractShadowRenderer> ext
 
     /**
      * isFlushQueues does nothing and is kept only for backward compatibility
+     *
+     * @return false
      */
     @Deprecated
     public boolean isFlushQueues() {
@@ -225,15 +227,9 @@ public abstract class AbstractShadowFilter<T extends AbstractShadowRenderer> ext
     }
 
     /**
-     * setFlushQueues does nothing now and is kept only for backward compatibility
-     */
-    @Deprecated
-    public void setFlushQueues(boolean flushQueues) {}
-
-    /**
      * sets the shadow compare mode see {@link CompareMode} for more info
      *
-     * @param compareMode
+     * @param compareMode the desired mode
      */
     final public void setShadowCompareMode(CompareMode compareMode) {
         shadowRenderer.setShadowCompareMode(compareMode);
@@ -253,7 +249,7 @@ public abstract class AbstractShadowFilter<T extends AbstractShadowRenderer> ext
      * Sets the filtering mode for shadow edges see {@link EdgeFilteringMode}
      * for more info
      *
-     * @param filterMode
+     * @param filterMode the desired mode
      */
     final public void setEdgeFilteringMode(EdgeFilteringMode filterMode) {
         shadowRenderer.setEdgeFilteringMode(filterMode);
@@ -328,6 +324,7 @@ public abstract class AbstractShadowFilter<T extends AbstractShadowRenderer> ext
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public AbstractShadowFilter<T> jmeClone() {
         try {
             return (AbstractShadowFilter<T>) super.clone();

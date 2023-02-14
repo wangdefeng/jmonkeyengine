@@ -5,7 +5,7 @@ MaterialDef PBR Lighting {
         // Alpha threshold for fragment discarding
         Float AlphaDiscardThreshold (AlphaTestFallOff)
 
-        //metalness of the material
+        //metallicity of the material
         Float Metallic : 1.0
         //Roughness of the material
         Float Roughness : 1.0        
@@ -28,7 +28,7 @@ MaterialDef PBR Lighting {
         Texture2D RoughnessMap -LINEAR
 
         //Metallic and Roughness are packed respectively in the b and g channel of a single map
-        // r: unspecified
+        // r: AO (if AoPackedInMRMap is true)
         // g: Roughness
         // b: Metallic
         Texture2D MetallicRoughnessMap -LINEAR
@@ -70,9 +70,9 @@ MaterialDef PBR Lighting {
 
         // Set to use TexCoord2 for the lightmap sampling
         Boolean SeparateTexCoord
-        // the light map is a gray scale ao map, on ly the r channel will be read.
+        // the light map is a grayscale ao map, only the r channel will be read.
         Boolean LightMapAsAOMap
-
+        Boolean AoPackedInMRMap
         //shadows
         Int FilterMode
         Boolean HardwareShadows
@@ -158,6 +158,7 @@ MaterialDef PBR Lighting {
             NORMAL_TYPE: NormalType
             VERTEX_COLOR : UseVertexColor
             AO_MAP: LightMapAsAOMap
+            AO_PACKED_IN_MR_MAP : AoPackedInMRMap
             NUM_MORPH_TARGETS: NumberOfMorphTargets
             NUM_TARGETS_BUFFERS: NumberOfTargetsBuffers
             HORIZON_FADE: HorizonFade
@@ -168,7 +169,7 @@ MaterialDef PBR Lighting {
     Technique PreShadow {
 
         VertexShader GLSL300 GLSL100 GLSL150 :   Common/MatDefs/Shadow/PreShadow.vert
-        FragmentShader GLSL300 GLSL100 GLSL150 : Common/MatDefs/Shadow/PreShadow.frag
+        FragmentShader GLSL300 GLSL100 GLSL150 : Common/MatDefs/Shadow/PreShadowPBR.frag
 
         WorldParameters {
             WorldViewProjectionMatrix
@@ -196,9 +197,9 @@ MaterialDef PBR Lighting {
     }
 
 
-    Technique PostShadow{
-        VertexShader GLSL310 GLSL300 GLSL150:   Common/MatDefs/Shadow/PostShadow.vert
-        FragmentShader GLSL310 GLSL300 GLSL150: Common/MatDefs/Shadow/PostShadow.frag
+    Technique PostShadow {
+        VertexShader GLSL310 GLSL300 GLSL100 GLSL150:   Common/MatDefs/Shadow/PostShadow.vert
+        FragmentShader GLSL310 GLSL300 GLSL100 GLSL150: Common/MatDefs/Shadow/PostShadowPBR.frag
 
         WorldParameters {
             WorldViewProjectionMatrix
@@ -212,7 +213,6 @@ MaterialDef PBR Lighting {
             FILTER_MODE : FilterMode
             PCFEDGE : PCFEdge
             DISCARD_ALPHA : AlphaDiscardThreshold           
-            SHADOWMAP_SIZE : ShadowMapSize
             SHADOWMAP_SIZE : ShadowMapSize
             FADE : FadeInfo
             PSSM : Splits
@@ -231,40 +231,6 @@ MaterialDef PBR Lighting {
         }
     }
 
-    Technique PostShadow{
-        VertexShader GLSL100:   Common/MatDefs/Shadow/PostShadow.vert
-        FragmentShader GLSL100: Common/MatDefs/Shadow/PostShadow.frag
-
-        WorldParameters {
-            WorldViewProjectionMatrix
-            WorldMatrix
-            ViewProjectionMatrix
-            ViewMatrix
-        }
-
-        Defines {
-            HARDWARE_SHADOWS : HardwareShadows
-            FILTER_MODE : FilterMode
-            PCFEDGE : PCFEdge
-            DISCARD_ALPHA : AlphaDiscardThreshold           
-            SHADOWMAP_SIZE : ShadowMapSize
-            FADE : FadeInfo
-            PSSM : Splits
-            POINTLIGHT : LightViewProjectionMatrix5
-            NUM_BONES : NumberOfBones
-            INSTANCING : UseInstancing
-            BACKFACE_SHADOWS: BackfaceShadows
-            NUM_MORPH_TARGETS: NumberOfMorphTargets
-            NUM_TARGETS_BUFFERS: NumberOfTargetsBuffers
-        }
-
-        ForcedRenderState {
-            Blend Modulate
-            DepthWrite Off   
-            PolyOffset -0.1 0  
-        }
-    }
-
     Technique PreNormalPass {
 
         VertexShader GLSL100 :   Common/MatDefs/SSAO/normal.vert
@@ -279,6 +245,7 @@ MaterialDef PBR Lighting {
         }
 
         Defines {
+            BASECOLORMAP_ALPHA : BaseColorMap            
             NUM_BONES : NumberOfBones
             INSTANCING : UseInstancing
             NUM_MORPH_TARGETS: NumberOfMorphTargets

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,7 +67,14 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
     private String shotName;
     private long shotIndex = 0;
     private int width, height;
-    private AppProfiler prof;
+    /**
+     * InputManager to which the ActionListener and the mapping are added
+     */
+    private InputManager inputManager;
+    /**
+     * ViewPort to which the SceneProcessor is attached
+     */
+    private ViewPort last;
 
     /**
      * Using this constructor, the screenshot files will be written sequentially to the system
@@ -108,8 +115,8 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
      * Use an empty string to use the application folder. Use NULL to use the system
      * default storage folder.
      * @param filePath The screenshot file path to use. Include the separator at the end of the path.
-     * @param shotIndex The base index for screen shots.  The first screen shot will have
-     *                  shotIndex + 1 appended, the next shotIndex + 2, and so on.
+     * @param shotIndex The base index for screenshots.  The first screenshot will have
+     *     shotIndex + 1 appended, the next shotIndex + 2, and so on.
      */
     public ScreenshotAppState(String filePath, long shotIndex) {
         this.filePath = filePath;
@@ -124,15 +131,15 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
      * default storage folder.
      * @param filePath The screenshot file path to use. Include the separator at the end of the path.
      * @param fileName The name of the file to save the screenshot as.
-     * @param shotIndex The base index for screen shots.  The first screen shot will have
-     *                  shotIndex + 1 appended, the next shotIndex + 2, and so on.
+     * @param shotIndex The base index for screenshots.  The first screenshot will have
+     *     shotIndex + 1 appended, the next shotIndex + 2, and so on.
      */
     public ScreenshotAppState(String filePath, String fileName, long shotIndex) {
         this.filePath = filePath;
         this.shotName = fileName;
         this.shotIndex = shotIndex;
     }
-    
+
     /**
      * Set the file path to store the screenshot.
      * Include the separator at the end of the path.
@@ -153,14 +160,16 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
     }
 
     /**
-     * Sets the base index that will used for subsequent screen shots. 
+     * Sets the base index that will used for subsequent screenshots.
+     *
+     * @param index the desired base index
      */
     public void setShotIndex(long index) {
         this.shotIndex = index;
     }
 
     /**
-     * Sets if the filename should be appended with a number representing the 
+     * Sets if the filename should be appended with a number representing the
      * current sequence.
      * @param numberedWanted If numbering is wanted.
      */
@@ -170,13 +179,13 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
-        if (!super.isInitialized()){
-            InputManager inputManager = app.getInputManager();
+        if (!super.isInitialized()) {
+            inputManager = app.getInputManager();
             inputManager.addMapping("ScreenShot", new KeyTrigger(KeyInput.KEY_SYSRQ));
             inputManager.addListener(this, "ScreenShot");
 
             List<ViewPort> vps = app.getRenderManager().getPostViews();
-            ViewPort last = vps.get(vps.size()-1);
+            last = vps.get(vps.size() - 1);
             last.addProcessor(this);
 
             if (shotName == null) {
@@ -187,8 +196,45 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
         super.initialize(stateManager, app);
     }
 
+    /**
+     * Clean up this AppState during the first update after it gets detached.
+     * <p>
+     * Because each ScreenshotAppState is also a SceneProcessor (in addition to
+     * being an AppState) this method is also invoked when the SceneProcessor
+     * get removed from its ViewPort, leading to an indirect recursion:
+     * <ol><li>AppStateManager invokes ScreenshotAppState.cleanup()</li>
+     * <li>cleanup() invokes ViewPort.removeProcessor()</li>
+     * <li>removeProcessor() invokes ScreenshotAppState.cleanup()</li>
+     * <li>... and so on.</li>
+     * </ol>
+     * <p>
+     * In order to break this recursion, this method only removes the
+     * SceneProcessor if it has not previously been removed.
+     * <p>
+     * A better design would have the AppState and SceneProcessor be 2 distinct
+     * objects, but doing so now might break applications that rely on them
+     * being a single object.
+     */
+    @Override
+    public void cleanup() {
+        if (inputManager != null) {
+            inputManager.deleteMapping("ScreenShot");
+            inputManager.removeListener(this);
+            inputManager = null;
+        }
+
+        ViewPort viewPort = last;
+        if (viewPort != null) {
+            last = null;
+            viewPort.removeProcessor(this); // XXX indirect recursion!
+        }
+
+        super.cleanup();
+    }
+
+    @Override
     public void onAction(String name, boolean value, float tpf) {
-        if (value){
+        if (value) {
             capture = true;
         }
     }
@@ -197,6 +243,7 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
         capture = true;
     }
 
+    @Override
     public void initialize(RenderManager rm, ViewPort vp) {
         renderer = rm.getRenderer();
         this.rm = rm;
@@ -208,20 +255,26 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
         return super.isInitialized() && renderer != null;
     }
 
+    @Override
     public void reshape(ViewPort vp, int w, int h) {
         outBuf = BufferUtils.createByteBuffer(w * h * 4);
         width = w;
         height = h;
     }
 
+    @Override
     public void preFrame(float tpf) {
+        // do nothing
     }
 
+    @Override
     public void postQueue(RenderQueue rq) {
+        // do nothing
     }
 
+    @Override
     public void postFrame(FrameBuffer out) {
-        if (capture){
+        if (capture) {
             capture = false;
 
             Camera curCamera = rm.getCurrentCamera();
@@ -248,30 +301,36 @@ public class ScreenshotAppState extends AbstractAppState implements ActionListen
             } else {
                 file = new File(filePath + filename + ".png").getAbsoluteFile();
             }
-            logger.log(Level.FINE, "Saving ScreenShot to: {0}", file.getAbsolutePath());
+
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, "Saving ScreenShot to: {0}", file.getAbsolutePath());
+            }
 
             try {
                 writeImageFile(file);
             } catch (IOException ex) {
                 logger.log(Level.SEVERE, "Error while saving screenshot", ex);
-            }                
+            }
         }
     }
 
     @Override
     public void setProfiler(AppProfiler profiler) {
-        this.prof = profiler;
+        // not implemented
     }
 
     /**
-     *  Called by postFrame() once the screen has been captured to outBuf.
+     * Called by postFrame() once the screen has been captured to outBuf.
+     *
+     * @param file the output file
+     * @throws IOException if an I/O error occurs
      */
-    protected void writeImageFile( File file ) throws IOException {
+    protected void writeImageFile(File file) throws IOException {
         OutputStream outStream = new FileOutputStream(file);
         try {
             JmeSystem.writeImageFile(outStream, "png", outBuf, width, height);
         } finally {
             outStream.close();
         }
-    } 
+    }
 }

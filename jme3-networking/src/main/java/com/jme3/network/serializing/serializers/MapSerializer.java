@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,12 +71,13 @@ public class MapSerializer extends Serializer {
      */
 
     @SuppressWarnings("unchecked")
+    @Override
     public <T> T readObject(ByteBuffer data, Class<T> c) throws IOException {
         int length = data.getInt();
 
         Map map;
         try {
-            map = (Map)c.newInstance();
+            map = (Map) c.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             log.log(Level.WARNING, "[Serializer][???] Could not determine map type. Using HashMap.");
             map = new HashMap();
@@ -124,6 +125,7 @@ public class MapSerializer extends Serializer {
     }
 
     @SuppressWarnings("unchecked")
+    @Override
     public void writeObject(ByteBuffer buffer, Object object) throws IOException {
         Map map = (Map)object;
         int length = map.size();

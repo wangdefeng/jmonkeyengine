@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,13 +58,20 @@ public class HingeJoint extends PhysicsJoint {
     protected float relaxationFactor = 1.0f;
     protected float limitSoftness = 0.9f;
 
-    public HingeJoint() {
+    protected HingeJoint() {
     }
 
     /**
      * Creates a new HingeJoint
+     *
+     * @param nodeA the body for the A end (not null, alias created)
+     * @param nodeB the body for the B end (not null, alias created)
      * @param pivotA local translation of the joint connection point in node A
      * @param pivotB local translation of the joint connection point in node B
+     * @param axisA the joint axis in A's local coordinates (unit vector,
+     * alias created)
+     * @param axisB the joint axis in B's local coordinates (unit vector,
+     * alias created)
      */
     public HingeJoint(PhysicsRigidBody nodeA, PhysicsRigidBody nodeB, Vector3f pivotA, Vector3f pivotB, Vector3f axisA, Vector3f axisB) {
         super(nodeA, nodeB, pivotA, pivotB);
@@ -125,6 +132,7 @@ public class HingeJoint extends PhysicsJoint {
         return ((HingeConstraint) constraint).getHingeAngle();
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule capsule = ex.getCapsule(this);
@@ -145,6 +153,7 @@ public class HingeJoint extends PhysicsJoint {
         capsule.write(((HingeConstraint) constraint).getMaxMotorImpulse(), "maxMotorImpulse", 0.0f);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule capsule = im.getCapsule(this);

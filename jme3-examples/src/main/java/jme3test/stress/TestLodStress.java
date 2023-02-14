@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,7 @@ public class TestLodStress extends SimpleApplication {
         app.start();
     }
 
+    @Override
     public void simpleInitApp() {
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(-1,-1,-1).normalizeLocal());
@@ -66,7 +67,7 @@ public class TestLodStress extends SimpleApplication {
         mat.setBoolean("VertexLighting", true);
         teapot.setMaterial(mat);
         
-       // show normals as material
+        // A special Material to visualize mesh normals:
         //Material mat = new Material(assetManager, "Common/MatDefs/Misc/ShowNormals.j3md");
 
         for (int y = -10; y < 10; y++){

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@ public class GImpactCollisionShape extends CollisionShape{
     protected ByteBuffer triangleIndexBase, vertexBase;
     protected IndexedMesh bulletMesh;
 
-    public GImpactCollisionShape() {
+    protected GImpactCollisionShape() {
     }
 
     /**
@@ -81,11 +81,14 @@ public class GImpactCollisionShape extends CollisionShape{
 
     /**
      * creates a jme mesh from the collision shape, only needed for debugging
+     *
+     * @return a new Mesh
      */
     public Mesh createJmeMesh(){
         return Converter.convert(bulletMesh);
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule capsule = ex.getCapsule(this);
@@ -99,6 +102,7 @@ public class GImpactCollisionShape extends CollisionShape{
         capsule.write(vertexBase.array(), "vertexBase", new byte[0]);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule capsule = im.getCapsule(this);

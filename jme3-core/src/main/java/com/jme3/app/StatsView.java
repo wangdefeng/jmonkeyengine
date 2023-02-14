@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,32 +47,30 @@ import com.jme3.util.clone.JmeCloneable;
 /**
  * The <code>StatsView</code> provides a heads-up display (HUD) of various
  * statistics of rendering. The data is retrieved every frame from a
- * {@link com.jme3.renderer.Statistics} and then displayed on screen.<br/>
- * <br/>
- * Usage:<br/>
+ * {@link com.jme3.renderer.Statistics} and then displayed on screen.
+ * <p>
  * To use the stats view, you need to retrieve the
  * {@link com.jme3.renderer.Statistics} from the
  * {@link com.jme3.renderer.Renderer} used by the application. Then, attach
- * the <code>StatsView</code> to the scene graph.<br/>
- * <code><br/>
- * Statistics stats = renderer.getStatistics();<br/>
- * StatsView statsView = new StatsView("MyStats", assetManager, stats);<br/>
- * rootNode.attachChild(statsView);<br/>
- * </code>
+ * the <code>StatsView</code> to the scene graph.
+ * <pre>
+ * Statistics stats = renderer.getStatistics();
+ * StatsView statsView = new StatsView("MyStats", assetManager, stats);
+ * rootNode.attachChild(statsView);
+ * </pre>
  */
 public class StatsView extends Node implements Control, JmeCloneable {
+    final private BitmapText statText;
+    final private Statistics statistics;
 
-    private BitmapText statText;
-    private Statistics statistics;
-
-    private String[] statLabels;
-    private int[] statData;
+    final private String[] statLabels;
+    final private int[] statData;
 
     private boolean enabled = true;
 
     private final StringBuilder stringBuilder = new StringBuilder();
 
-    public StatsView(String name, AssetManager manager, Statistics stats){
+    public StatsView(String name, AssetManager manager, Statistics stats) {
         super(name);
 
         setQueueBucket(Bucket.Gui);
@@ -96,8 +94,8 @@ public class StatsView extends Node implements Control, JmeCloneable {
         return statText.getLineHeight() * statLabels.length;
     }
 
+    @Override
     public void update(float tpf) {
-
         if (!isEnabled())
             return;
 
@@ -113,7 +111,7 @@ public class StatsView extends Node implements Control, JmeCloneable {
 
         // Moved to ResetStatsState to make sure it is
         // done even if there is no StatsView or the StatsView
-        // is disable.
+        // is disabled.
         //statistics.clearFrame();
     }
 
@@ -122,17 +120,18 @@ public class StatsView extends Node implements Control, JmeCloneable {
     public Control cloneForSpatial(Spatial spatial) {
         throw new UnsupportedOperationException();
     }
-    
+
     @Override
     public StatsView jmeClone() {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public void cloneFields( Cloner cloner, Object original ) {
+    public void cloneFields(Cloner cloner, Object original) {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
+    @Override
     public void setSpatial(Spatial spatial) {
     }
 
@@ -145,7 +144,7 @@ public class StatsView extends Node implements Control, JmeCloneable {
         return enabled;
     }
 
+    @Override
     public void render(RenderManager rm, ViewPort vp) {
     }
-
 }

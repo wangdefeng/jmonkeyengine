@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,7 @@ import java.nio.ShortBuffer;
  * mesh, minus one outer edge around it. Then it builds the edges in counter-clockwise order,
  * starting at the bottom right and working up, then left across the top, then down across the
  * left, then right across the bottom.
- * It needs to know what its neighbour's LOD's are so it can stitch the edges.
+ * It needs to know what its neighbour's LODs are, so it can stitch the edges.
  * It creates degenerate polygons in order to keep the winding order of the polygons and to move
  * the strip to a new position while still maintaining the continuity of the overall mesh. These
  * degenerates are removed quickly by the video card.
@@ -141,8 +141,8 @@ public class LODGeomap extends GeoMap {
         float offsetX = offset.x + (offsetAmount * 1.0f);
         float offsetY = -offset.y + (offsetAmount * 1.0f);//note the -, we flip the tex coords
 
-        store.set((((float) x) + offsetX) / (float) (totalSize - 1), // calculates percentage of texture here
-                (((float) y) + offsetY) / (float) (totalSize - 1));
+        store.set((x + offsetX) / (totalSize - 1), // calculates percentage of texture here
+                (y + offsetY) / (totalSize - 1));
         return store;
     }
 
@@ -158,17 +158,14 @@ public class LODGeomap extends GeoMap {
      * @return the LOD-ified index buffer
      */
     public IndexBuffer writeIndexArrayLodDiff(int lod, boolean rightLod, boolean topLod, boolean leftLod, boolean bottomLod, int totalSize) {
-
-        
+        int numVertices = getWidth() * getHeight();
         int numIndexes = calculateNumIndexesLodDiff(lod);
-        
-        IndexBuffer ib = IndexBuffer.createIndexBuffer(numIndexes, numIndexes);
+        IndexBuffer ib = IndexBuffer.createIndexBuffer(numVertices, numIndexes);
         VerboseBuffer buffer = new VerboseBuffer(ib);
-
 
         // generate center squares minus the edges
         //System.out.println("for (x="+lod+"; x<"+(getWidth()-(2*lod))+"; x+="+lod+")");
-        //System.out.println("	for (z="+lod+"; z<"+(getWidth()-(1*lod))+"; z+="+lod+")");
+        //System.out.println("    for (z="+lod+"; z<"+(getWidth()-(1*lod))+"; z+="+lod+")");
         for (int r = lod; r < getWidth() - (2 * lod); r += lod) { // row
             int rowIdx = r * getWidth();
             int nextRowIdx = (r + 1 * lod) * getWidth();
@@ -198,7 +195,7 @@ public class LODGeomap extends GeoMap {
         int br = getWidth() * (getWidth() - lod) - 1 - lod;
         buffer.put(br); // bottom right -1
         int corner = getWidth() * getWidth() - 1;
-        buffer.put(corner);	// bottom right corner
+        buffer.put(corner);    // bottom right corner
         if (rightLod) { // if lower LOD
             for (int row = getWidth() - lod; row >= 1 + lod; row -= 2 * lod) {
                 int idx = (row) * getWidth() - 1 - lod;
@@ -232,7 +229,7 @@ public class LODGeomap extends GeoMap {
 
         //System.out.println("\ntop:");
 
-        // top 			(the order gets reversed here so the diagonals line up)
+        // top (the order gets reversed here so the diagonals line up)
         if (topLod) { // if lower LOD
             if (rightLod) {
                 buffer.put(getWidth() - 1);
@@ -360,16 +357,14 @@ public class LODGeomap extends GeoMap {
     }
 
     public IndexBuffer writeIndexArrayLodVariable(int lod, int rightLod, int topLod, int leftLod, int bottomLod, int totalSize) {
-
+        int numVertices = getWidth() * getHeight();
         int numIndexes = calculateNumIndexesLodDiff(lod);
-        
-        IndexBuffer ib = IndexBuffer.createIndexBuffer(numIndexes, numIndexes);
+        IndexBuffer ib = IndexBuffer.createIndexBuffer(numVertices, numIndexes);
         VerboseBuffer buffer = new VerboseBuffer(ib);
-
 
         // generate center squares minus the edges
         //System.out.println("for (x="+lod+"; x<"+(getWidth()-(2*lod))+"; x+="+lod+")");
-        //System.out.println("	for (z="+lod+"; z<"+(getWidth()-(1*lod))+"; z+="+lod+")");
+        //System.out.println("    for (z="+lod+"; z<"+(getWidth()-(1*lod))+"; z+="+lod+")");
         for (int r = lod; r < getWidth() - (2 * lod); r += lod) { // row
             int rowIdx = r * getWidth();
             int nextRowIdx = (r + 1 * lod) * getWidth();
@@ -399,7 +394,7 @@ public class LODGeomap extends GeoMap {
         int br = getWidth() * (getWidth() - lod) - 1 - lod;
         buffer.put(br); // bottom right -1
         int corner = getWidth() * getWidth() - 1;
-        buffer.put(corner);	// bottom right corner
+        buffer.put(corner);    // bottom right corner
         if (rightLod > lod) { // if lower LOD
             int idx = corner;
             int it = (getWidth() - 1) / rightLod; // iterations
@@ -441,7 +436,7 @@ public class LODGeomap extends GeoMap {
 
         //System.out.println("\ntop:");
 
-        // top 			(the order gets reversed here so the diagonals line up)
+        // top (the order gets reversed here so the diagonals line up)
         if (topLod > lod) { // if lower LOD
             if (rightLod > lod) {
                 // need to flip winding order
@@ -613,7 +608,7 @@ public class LODGeomap extends GeoMap {
         //System.out.println("side: "+side);
         int num = side * side * 2;
         //System.out.println("num: "+num);
-        num -= 2 * side;	// remove one first row and one last row (they are only hit once each)
+        num -= 2 * side;    // remove one first row and one last row (they are only hit once each)
         //System.out.println("num2: "+num);
         // now get the degenerate indexes that exist between strip rows
         int degenerates = 2 * (side - (2)); // every row except the first and last
@@ -632,7 +627,7 @@ public class LODGeomap extends GeoMap {
 
     public FloatBuffer[] writeTangentArray(FloatBuffer normalBuffer, FloatBuffer tangentStore, FloatBuffer binormalStore, FloatBuffer textureBuffer, Vector3f scale) {
         if (!isLoaded()) {
-            throw new NullPointerException();
+            throw new IllegalStateException("The Geomap data is not loaded.");
         }
 
         if (tangentStore != null) {
@@ -774,7 +769,7 @@ public class LODGeomap extends GeoMap {
     @Override
     public FloatBuffer writeNormalArray(FloatBuffer store, Vector3f scale) {
         if (!isLoaded()) {
-            throw new NullPointerException();
+            throw new IllegalStateException("The Geomap data is not loaded.");
         }
 
         if (store != null) {

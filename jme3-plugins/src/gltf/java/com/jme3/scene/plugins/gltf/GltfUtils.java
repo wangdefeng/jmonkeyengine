@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2009-2021 jMonkeyEngine
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * * Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ * * Neither the name of 'jMonkeyEngine' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.jme3.scene.plugins.gltf;
 
 import com.google.gson.*;
@@ -7,7 +38,6 @@ import com.jme3.math.*;
 import com.jme3.scene.*;
 import com.jme3.texture.Texture;
 import com.jme3.util.*;
-
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -20,6 +50,12 @@ import java.util.logging.Logger;
 public class GltfUtils {
 
     private static final Logger logger = Logger.getLogger(GltfUtils.class.getName());
+
+    /**
+     * A private constructor to inhibit instantiation of this class.
+     */
+    private GltfUtils() {
+    }
 
     public static Mesh.Mode getMeshMode(Integer mode) {
         if (mode == null) {
@@ -341,25 +377,25 @@ public class GltfUtils {
     public static float readAsFloat(LittleEndien stream, VertexBuffer.Format format) throws IOException {
         //We may have packed data so depending on the format, we need to read data differently and unpack it
         // Implementations must use following equations to get corresponding floating-point value f from a normalized integer c and vise-versa:
-        // accessor.componentType	int-to-float	            float-to-int
-        // 5120 (BYTE)	            f = max(c / 127.0, -1.0)	c = round(f * 127.0)
-        // 5121 (UNSIGNED_BYTE)	    f = c / 255.0	            c = round(f * 255.0)
-        // 5122 (SHORT)	            f = max(c / 32767.0, -1.0)	c = round(f * 32767.0)
-        // 5123 (UNSIGNED_SHORT)	f = c / 65535.0	            c = round(f * 65535.0)
-        byte b;
+        // accessor.componentType    int-to-float                float-to-int
+        // 5120 (BYTE)               f = max(c / 127.0, -1.0)    c = round(f * 127.0)
+        // 5121 (UNSIGNED_BYTE)      f = c / 255.0               c = round(f * 255.0)
+        // 5122 (SHORT)              f = max(c / 32767.0, -1.0)  c = round(f * 32767.0)
+        // 5123 (UNSIGNED_SHORT)     f = c / 65535.0             c = round(f * 65535.0)
+        int c;
         switch (format) {
             case Byte:
-                b = stream.readByte();
-                return Math.max((float) b / 127f, -1f);
+                c = stream.readByte();
+                return Math.max(c / 127f, -1f);
             case UnsignedByte:
-                b = stream.readByte();
-                return (float) b / 255f;
+                c = stream.readUnsignedByte();
+                return c / 255f;
             case Short:
-                b = stream.readByte();
-                return Math.max((float) b / 32767f, -1f);
+                c = stream.readShort();
+                return Math.max(c / 32767f, -1f);
             case UnsignedShort:
-                b = stream.readByte();
-                return (float) b / 65535f;
+                c = stream.readUnsignedShort();
+                return c / 65535f;
             default:
                 //we have a regular float
                 return stream.readFloat();
@@ -465,7 +501,7 @@ public class GltfUtils {
                 }
 
                 if (sum != 1f) {
-                    // compute new vals based on sum
+                    // compute new values based on sum
                     float sumToB = sum == 0 ? 0 : 1f / sum;
                     weightsArray[i] *= sumToB;
                     weightsArray[i + 1] *= sumToB;

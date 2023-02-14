@@ -226,6 +226,7 @@ public class BufferObject extends NativeObject {
      * @param <T> the value's type.
      * @return the current value.
      */
+    @SuppressWarnings("unchecked")
     public <T> T getFieldValue(final String name) {
 
         final BufferObjectField field = fields.get(name);
@@ -362,11 +363,11 @@ public class BufferObject extends NativeObject {
     }
 
     /**
-     * Estimates bytes count to present the value on GPU.
+     * Estimates byte count to present the value on the GPU.
      *
      * @param value      the value.
      * @param multiplier the multiplier.
-     * @return the estimated bytes cunt.
+     * @return the estimated byte count.
      */
     protected int estimateArray(final Object value, final int multiplier) {
 
@@ -380,20 +381,20 @@ public class BufferObject extends NativeObject {
     }
 
     /**
-     * Estimates bytes count to present the values on GPU.
+     * Estimates byte count to present the values on the GPU.
      *
      * @param values the values.
-     * @return the estimated bytes cunt.
+     * @return the estimated byte count.
      */
     protected int estimate(final float[] values) {
         return values.length * 4;
     }
 
     /**
-     * Estimates bytes count to present the values on GPU.
+     * Estimates byte count to present the values on the GPU.
      *
      * @param values the values.
-     * @return the estimated bytes cunt.
+     * @return the estimated byte count.
      */
     protected int estimate(final int[] values) {
         return values.length * 4;
@@ -492,6 +493,7 @@ public class BufferObject extends NativeObject {
      * @param data  the data buffer.
      * @param value the value.
      */
+    @SuppressWarnings("unchecked")
     protected void writeMat3Array(final ByteBuffer data, final Object value) {
 
         if (value instanceof Matrix3f[]) {
@@ -523,6 +525,7 @@ public class BufferObject extends NativeObject {
      * @param data  the data buffer.
      * @param value the value.
      */
+    @SuppressWarnings("unchecked")
     protected void writeMat4Array(final ByteBuffer data, final Object value) {
 
         if (value instanceof Matrix4f[]) {
@@ -555,6 +558,7 @@ public class BufferObject extends NativeObject {
      * @param data  the data buffer.
      * @param value the value.
      */
+    @SuppressWarnings("unchecked")
     protected void writeVec4Array(final ByteBuffer data, final Object value) {
 
         if (value instanceof Object[]) {
@@ -586,6 +590,7 @@ public class BufferObject extends NativeObject {
      * @param data  the data buffer.
      * @param value the value.
      */
+    @SuppressWarnings("unchecked")
     protected void writeVec3Array(final ByteBuffer data, final Object value) {
 
         if (value instanceof Vector3f[]) {
@@ -617,6 +622,7 @@ public class BufferObject extends NativeObject {
      * @param data  the data buffer.
      * @param value the value.
      */
+    @SuppressWarnings("unchecked")
     protected void writeVec2Array(final ByteBuffer data, final Object value) {
 
         if (value instanceof Vector2f[]) {

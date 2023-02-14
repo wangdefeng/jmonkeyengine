@@ -1,7 +1,3 @@
-if (!hasProperty('mainClass')) {
-    ext.mainClass = ''
-}
-
 sourceSets {
     main {
         java {
@@ -14,7 +10,15 @@ sourceSets {
         java {
             srcDir 'src/test/java'
         }
+
+        System.setProperty "java.awt.headless", "true"
     }
+}
+
+dependencies {
+    testRuntimeOnly project(':jme3-testdata')
+    testImplementation project(':jme3-desktop')
+    testRuntimeOnly project(':jme3-plugins')
 }
 
 task updateVersionPropertiesFile {

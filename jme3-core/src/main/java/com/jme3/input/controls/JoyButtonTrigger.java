@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2022 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,16 +39,16 @@ public class JoyButtonTrigger implements Trigger {
 
     /**
      * Use {@link Joystick#assignButton(java.lang.String, int) } instead.
-     * 
-     * @param joyId
-     * @param axisId 
+     *
+     * @param joyId the ID of a joystick
+     * @param buttonId the index of a joystick button
      */
-    public JoyButtonTrigger(int joyId, int axisId) {
+    public JoyButtonTrigger(int joyId, int buttonId) {
         this.joyId = joyId;
-        this.buttonId = axisId;
+        this.buttonId = buttonId;
     }
 
-    public static int joyButtonHash(int joyId, int joyButton){
+    public static int joyButtonHash(int joyId, int joyButton) {
         assert joyButton >= 0 && joyButton <= 255;
         return (2048 * joyId) | 1536 | (joyButton & 0xff);
     }
@@ -61,10 +61,12 @@ public class JoyButtonTrigger implements Trigger {
         return joyId;
     }
 
+    @Override
     public String getName() {
         return "JoyButton[joyId="+joyId+", axisId="+buttonId+"]";
     }
 
+    @Override
     public int triggerHashCode() {
         return joyButtonHash(joyId, buttonId);
     }

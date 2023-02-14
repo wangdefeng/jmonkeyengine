@@ -44,15 +44,6 @@ public class MockJmeSystemDelegate extends JmeSystemDelegate {
     }
 
     @Override
-    public void showErrorDialog(String message) {
-    }
-
-    @Override
-    public boolean showSettingsDialog(AppSettings sourceSettings, boolean loadFromRegistry) {
-        return false;
-    }
-
-    @Override
     public URL getPlatformAssetConfigURL() {
         return Thread.currentThread().getContextClassLoader().getResource("com/jme3/asset/General.cfg");
     }

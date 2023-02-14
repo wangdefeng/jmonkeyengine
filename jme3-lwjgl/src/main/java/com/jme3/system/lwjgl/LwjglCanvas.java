@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -125,8 +125,8 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
                 return;
             }
 
-            // We must tell GL context to shutdown and wait for it to
-            // shutdown, otherwise, issues will occur.
+            // We must tell GL context to shut down and wait for it to
+            // shut down. Otherwise, issues will occur.
             logger.log(Level.FINE, "EDT: Telling OGL to destroy display ..");
             synchronized (taskLock){
                 desiredTask = TASK_DESTROY_DISPLAY;
@@ -158,6 +158,7 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
         return Type.Canvas;
     }
 
+    @Override
     public void create(boolean waitFor){
         if (renderThread == null){
             logger.log(Level.FINE, "MAIN: Creating OGL thread.");
@@ -182,6 +183,7 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
         // TODO: Handle other cases, like change of pixel format, etc.
     }
 
+    @Override
     public Canvas getCanvas(){
         return canvas;
     }
@@ -285,6 +287,7 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
         }
 
         SwingUtilities.invokeLater(new Runnable(){
+            @Override
             public void run(){
                 canvas.requestFocus();
             }
@@ -294,6 +297,9 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
     /**
      * It seems it is best to use one pixel format for all shared contexts.
      * @see <a href="http://developer.apple.com/library/mac/#qa/qa1248/_index.html">http://developer.apple.com/library/mac/#qa/qa1248/_index.html</a>
+     * 
+     * @param forPbuffer true&rarr;zero samples, false&rarr;correct number of samples
+     * @return a new instance
      */
     protected PixelFormat acquirePixelFormat(boolean forPbuffer){
         if (forPbuffer){
@@ -330,6 +336,8 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
 
     /**
      * Makes sure the pbuffer is available and ready for use
+     * 
+     * @throws LWJGLException if the buffer can't be made current
      */
     protected void makePbufferAvailable() throws LWJGLException{
         if (pbuffer != null && pbuffer.isBufferLost()){
@@ -369,6 +377,7 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
      * 1) When the context thread ends
      * 2) Any time the canvas becomes non-displayable
      */
+    @Override
     protected void destroyContext(){
         try {
             // invalidate the state so renderer can resume operation
@@ -383,7 +392,7 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
                  * 
                  * Destroying keyboard early prevents the error above, triggered
                  * by destroying keyboard in by Display.destroy() or Display.setParent(null).
-                 * Therefore Keyboard.destroy() should precede any of these calls.
+                 * Therefore, Keyboard.destroy() should precede any of these calls.
                  */
                 if (Keyboard.isCreated()){
                     // Should only happen if called in 
@@ -410,8 +419,8 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
             // The canvas is no longer visible,
             // but the context thread is still running.
             if (!needClose.get()){
-                // MUST make sure there's still a context current here ..
-                // Display is dead, make pbuffer available to the system
+                // MUST make sure there's still a context current here.
+                // Display is dead, make PBuffer available to the system.
                 makePbufferAvailable();
                 
                 renderer.invalidateState();
@@ -429,6 +438,9 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
      * This is called:
      * 1) When the context thread starts
      * 2) Any time the canvas becomes displayable again.
+	 * In the first call of this method, OpenGL context is not ready yet. Therefore, OpenCL context cannot be created.
+	 * The second call of this method is done after "simpleInitApp" is called. Therefore, OpenCL won't be available in "simpleInitApp" if Canvas/Swing is used.
+	 * To use OpenCL with Canvas/Swing, you need to use OpenCL in the rendering loop "simpleUpdate" and check for "context.getOpenCLContext()!=null".
      */
     @Override
     protected void createContext(AppSettings settings) {
@@ -468,7 +480,10 @@ public class LwjglCanvas extends LwjglAbstractDisplay implements JmeCanvasContex
                 }else{
                     Display.create(acquirePixelFormat(false));
                 }
-
+				if (settings.isOpenCLSupport()) {
+					initOpenCL();
+				}
+				
                 renderer.invalidateState();
             }else{
                 // First create the pbuffer, if it is needed.

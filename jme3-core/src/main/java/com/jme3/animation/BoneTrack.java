@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@ import java.util.BitSet;
 
 /**
  * Contains a list of transforms and times for each keyframe.
- * 
+ *
  * @author Kirill Vainer
  * @deprecated use {@link com.jme3.anim.AnimTrack}
  */
@@ -53,7 +53,7 @@ public final class BoneTrack implements JmeCloneable, Track {
      * Bone index in the skeleton which this track affects.
      */
     private int targetBoneIndex;
-    
+
     /**
      * Transforms and times for track.
      */
@@ -61,11 +61,11 @@ public final class BoneTrack implements JmeCloneable, Track {
     private CompactQuaternionArray rotations;
     private CompactVector3Array scales;
     private float[] times;
-    
+
     /**
      * Serialization-only. Do not use.
      */
-    public BoneTrack() {
+    protected BoneTrack() {
     }
 
     /**
@@ -89,7 +89,7 @@ public final class BoneTrack implements JmeCloneable, Track {
      * @param scales the scale of the bone for each frame
      */
     public BoneTrack(int targetBoneIndex, float[] times, Vector3f[] translations, Quaternion[] rotations, Vector3f[] scales) {
-    	this.targetBoneIndex = targetBoneIndex;
+        this.targetBoneIndex = targetBoneIndex;
         this.setKeyframes(times, translations, rotations, scales);
     }
 
@@ -191,23 +191,24 @@ public final class BoneTrack implements JmeCloneable, Track {
     }
 
     /**
-     * 
+     *
      * Modify the bone which this track modifies in the skeleton to contain
      * the correct animation transforms for a given time.
      * The transforms can be interpolated in some method from the keyframes.
      *
      * @param time the current time of the animation
      * @param weight the weight of the animation
-     * @param control
-     * @param channel
-     * @param vars
+     * @param control to access the Skeleton
+     * @param channel which bones can be affected
+     * @param vars storage for temporary values
      */
+    @Override
     public void setTime(float time, float weight, AnimControl control, AnimChannel channel, TempVars vars) {
         BitSet affectedBones = channel.getAffectedBones();
         if (affectedBones != null && !affectedBones.get(targetBoneIndex)) {
             return;
         }
-        
+
         Bone target = control.getSkeleton().getBone(targetBoneIndex);
 
         Vector3f tempV = vars.vect1;
@@ -216,7 +217,7 @@ public final class BoneTrack implements JmeCloneable, Track {
         Vector3f tempV2 = vars.vect3;
         Vector3f tempS2 = vars.vect4;
         Quaternion tempQ2 = vars.quat2;
-        
+
         int lastFrame = times.length - 1;
         if (time < 0 || lastFrame == 0) {
             rotations.get(0, tempQ);
@@ -259,15 +260,16 @@ public final class BoneTrack implements JmeCloneable, Track {
         }
 
 //        if (weight != 1f) {
-            target.blendAnimTransforms(tempV, tempQ, scales != null ? tempS : null, weight);
+        target.blendAnimTransforms(tempV, tempQ, scales != null ? tempS : null, weight);
 //        } else {
 //            target.setAnimTransforms(tempV, tempQ, scales != null ? tempS : null);
 //        }
     }
-    
+
     /**
      * @return the length of the track
      */
+    @Override
     public float getLength() {
         return times == null ? 0 : times[times.length - 1] - times[0];
     }
@@ -339,7 +341,7 @@ public final class BoneTrack implements JmeCloneable, Track {
         scales = (CompactVector3Array) ic.readSavable("scales", null);
 
         //Backward compatibility for old j3o files generated before revision 6807
-        if (im.getFormatVersion() == 0){
+        if (im.getFormatVersion() == 0) {
             if (translations == null) {
                 Savable[] sav = ic.readSavableArray("translations", null);
                 if (sav != null) {

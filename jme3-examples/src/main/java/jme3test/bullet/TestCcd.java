@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -125,28 +125,29 @@ public class TestCcd extends SimpleApplication implements ActionListener {
         //TODO: add render code
     }
 
+    @Override
     public void onAction(String binding, boolean value, float tpf) {
         if (binding.equals("shoot") && !value) {
-            Geometry bulletg = new Geometry("bullet", bullet);
-            bulletg.setMaterial(mat);
-            bulletg.setName("bullet");
-            bulletg.setLocalTranslation(cam.getLocation());
-            bulletg.setShadowMode(ShadowMode.CastAndReceive);
-            bulletg.addControl(new RigidBodyControl(bulletCollisionShape, 1));
-            bulletg.getControl(RigidBodyControl.class).setCcdMotionThreshold(0.1f);
-            bulletg.getControl(RigidBodyControl.class).setLinearVelocity(cam.getDirection().mult(40));
-            rootNode.attachChild(bulletg);
-            getPhysicsSpace().add(bulletg);
+            Geometry bulletGeometry = new Geometry("bullet", bullet);
+            bulletGeometry.setMaterial(mat);
+            bulletGeometry.setName("bullet");
+            bulletGeometry.setLocalTranslation(cam.getLocation());
+            bulletGeometry.setShadowMode(ShadowMode.CastAndReceive);
+            bulletGeometry.addControl(new RigidBodyControl(bulletCollisionShape, 1));
+            bulletGeometry.getControl(RigidBodyControl.class).setCcdMotionThreshold(0.1f);
+            bulletGeometry.getControl(RigidBodyControl.class).setLinearVelocity(cam.getDirection().mult(40));
+            rootNode.attachChild(bulletGeometry);
+            getPhysicsSpace().add(bulletGeometry);
         } else if (binding.equals("shoot2") && !value) {
-            Geometry bulletg = new Geometry("bullet", bullet);
-            bulletg.setMaterial(mat2);
-            bulletg.setName("bullet");
-            bulletg.setLocalTranslation(cam.getLocation());
-            bulletg.setShadowMode(ShadowMode.CastAndReceive);
-            bulletg.addControl(new RigidBodyControl(bulletCollisionShape, 1));
-            bulletg.getControl(RigidBodyControl.class).setLinearVelocity(cam.getDirection().mult(40));
-            rootNode.attachChild(bulletg);
-            getPhysicsSpace().add(bulletg);
+            Geometry bulletGeometry = new Geometry("bullet", bullet);
+            bulletGeometry.setMaterial(mat2);
+            bulletGeometry.setName("bullet");
+            bulletGeometry.setLocalTranslation(cam.getLocation());
+            bulletGeometry.setShadowMode(ShadowMode.CastAndReceive);
+            bulletGeometry.addControl(new RigidBodyControl(bulletCollisionShape, 1));
+            bulletGeometry.getControl(RigidBodyControl.class).setLinearVelocity(cam.getDirection().mult(40));
+            rootNode.attachChild(bulletGeometry);
+            getPhysicsSpace().add(bulletGeometry);
         }
     }
 }

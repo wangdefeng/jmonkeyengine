@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@ package com.jme3.opencl;
 
 /**
  * Base interface of all native OpenCL objects.
- * This interface provides the functionality for savely release the object.
+ * This interface provides the functionality to safely release the object.
  * @author shaman
  */
 public interface OpenCLObject {
@@ -61,7 +61,7 @@ public interface OpenCLObject {
     ObjectReleaser getReleaser();
     /**
      * Releases this native object.
-	 * 
+     * 
      * Should delegate to {@code getReleaser().release()}.
      */
     void release();
@@ -71,10 +71,10 @@ public interface OpenCLObject {
      * {@link OpenCLObjectManager}, you have to release it manually 
      * by calling {@link #release() }.
      * Without registering or releasing, a memory leak might occur.
-	 * <br>
-	 * Returns {@code this} to allow calls like
-	 * {@code Buffer buffer = clContext.createBuffer(1024).register();}.
-	 * @return {@code this}
+     * <br>
+     * Returns {@code this} to allow calls like
+     * {@code Buffer buffer = clContext.createBuffer(1024).register();}.
+     * @return {@code this}
      */
     OpenCLObject register();
 }

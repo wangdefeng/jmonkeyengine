@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -111,7 +111,7 @@ public class EnvironmentCamera extends BaseAppState {
      */
     protected int size = 256;
 
-    private final List<SnapshotJob> jobs = new ArrayList<SnapshotJob>();
+    private final List<SnapshotJob> jobs = new ArrayList<>();
 
     /**
      * Creates an EnvironmentCamera with a size of 256
@@ -172,28 +172,48 @@ public class EnvironmentCamera extends BaseAppState {
 
     @Override
     public void render(final RenderManager renderManager) {
+        if (isBusy()) {
+            final SnapshotJob job = jobs.get(0);
 
-        if (jobs.isEmpty()) {
-            return;
-        }
+            for (int i = 0; i < 6; i++) {
+                viewports[i].clearScenes();
+                viewports[i].attachScene(job.scene);
+                renderManager.renderViewPort(viewports[i], 0.16f);
+                buffers[i] = BufferUtils.createByteBuffer(
+                        size * size * imageFormat.getBitsPerPixel() / 8);
+                renderManager.getRenderer().readFrameBufferWithFormat(
+                        framebuffers[i], buffers[i], imageFormat);
+                images[i] = new Image(imageFormat, size, size, buffers[i],
+                        ColorSpace.Linear);
+                MipMapGenerator.generateMipMaps(images[i]);
+            }
 
-        final SnapshotJob job = jobs.get(0);
-
-        for (int i = 0; i < 6; i++) {
-            viewports[i].clearScenes();
-            viewports[i].attachScene(job.scene);
-            renderManager.renderViewPort(viewports[i], 0.16f);
-            buffers[i] = BufferUtils.createByteBuffer(size * size * imageFormat.getBitsPerPixel() / 8);
-            renderManager.getRenderer().readFrameBufferWithFormat(framebuffers[i], buffers[i], imageFormat);
-            images[i] = new Image(imageFormat, size, size, buffers[i], ColorSpace.Linear);
-            MipMapGenerator.generateMipMaps(images[i]);
-        }
-
-        final TextureCubeMap map = EnvMapUtils.makeCubeMap(images[0], images[1], images[2], images[3], images[4], images[5], imageFormat);
+            final TextureCubeMap map = EnvMapUtils.makeCubeMap(images[0],
+                    images[1], images[2], images[3], images[4], images[5],
+                    imageFormat);
             debugEnv = map;
-        job.callback.done(map);
-        map.getImage().dispose();
-        jobs.remove(0);
+            job.callback.done(map);
+            map.getImage().dispose();
+            jobs.remove(0);
+        }
+    }
+
+    /**
+     * Alter the background color of an initialized EnvironmentCamera.
+     *
+     * @param bgColor the desired color (not null, unaffected, default is the
+     * background color of the application's default viewport)
+     */
+    public void setBackGroundColor(ColorRGBA bgColor) {
+        if (!isInitialized()) {
+            throw new IllegalStateException(
+                    "The EnvironmentCamera is uninitialized.");
+        }
+
+        backGroundColor.set(bgColor);
+        for (int i = 0; i < 6; ++i) {
+            viewports[i].setBackgroundColor(bgColor);
+        }
     }
 
     /**
@@ -249,9 +269,29 @@ public class EnvironmentCamera extends BaseAppState {
         }
     }
 
+    /**
+     * Returns an array of the 6 ViewPorts used to capture the snapshot.
+     * Note that this will be null until after initialize() is called.
+     * @return array of ViewPorts
+     */
+    public ViewPort[] getViewPorts() {
+        return viewports;
+    }
+
+    /**
+     * Test whether this EnvironmentCamera is busy. Avoid reconfiguring while
+     * busy!
+     *
+     * @return true if busy, otherwise false
+     */
+    public boolean isBusy() {
+        boolean result = !jobs.isEmpty();
+        return result;
+    }
+
     @Override
     protected void initialize(Application app) {
-        this.backGroundColor = app.getViewPort().getBackgroundColor();
+        this.backGroundColor = app.getViewPort().getBackgroundColor().clone();
 
         final Camera[] cameras = new Camera[6];
         final Texture2D[] textures = new Texture2D[6];
@@ -270,7 +310,6 @@ public class EnvironmentCamera extends BaseAppState {
         }
     }
 
-
     @Override
     protected void cleanup(Application app) {
         this.backGroundColor = null;
@@ -280,7 +319,7 @@ public class EnvironmentCamera extends BaseAppState {
         }
 
         for (final Image image : images) {
-            if( image != null){
+            if (image != null) {
                 image.dispose();
             }
         }
@@ -313,7 +352,8 @@ public class EnvironmentCamera extends BaseAppState {
      * @param axisZ tha z axis
      * @return a new instance
      */
-    protected Camera createOffCamera(final int mapSize, final Vector3f worldPos, final Vector3f axisX, final Vector3f axisY, final Vector3f axisZ) {
+    protected Camera createOffCamera(final int mapSize, final Vector3f worldPos,
+            final Vector3f axisX, final Vector3f axisY, final Vector3f axisZ) {
         final Camera offCamera = new Camera(mapSize, mapSize);
         offCamera.setLocation(worldPos);
         offCamera.setAxes(axisX, axisY, axisZ);
@@ -323,10 +363,10 @@ public class EnvironmentCamera extends BaseAppState {
     }
 
     /**
-     * creates an offsceen VP
+     * creates an off-screen VP
      *
-     * @param name
-     * @param offCamera
+     * @param name the desired name for the offscreen viewport
+     * @param offCamera the Camera to be used (alias created)
      * @return a new instance
      */
     protected ViewPort createOffViewPort(final String name, final Camera offCamera) {
@@ -339,8 +379,8 @@ public class EnvironmentCamera extends BaseAppState {
     /**
      * create an offscreen frame buffer.
      *
-     * @param mapSize
-     * @param offView
+     * @param mapSize the desired size (pixels per side)
+     * @param offView the off-screen viewport to be used (alias created)
      * @return a new instance
      */
     protected FrameBuffer createOffScreenFrameBuffer(int mapSize, ViewPort offView) {
@@ -359,6 +399,7 @@ public class EnvironmentCamera extends BaseAppState {
         JobProgressListener<TextureCubeMap> callback;
         Spatial scene;
 
+        @SuppressWarnings("unchecked")
         public SnapshotJob(JobProgressListener callback, Spatial scene) {
             this.callback = callback;
             this.scene = scene;

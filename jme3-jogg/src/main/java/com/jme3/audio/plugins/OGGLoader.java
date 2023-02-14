@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -143,6 +143,7 @@ public class OGGLoader implements AssetLoader {
             super(ps, ls, vs, maximum);
         }
 
+        @Override
         public void setTime(float time) {
             if (time != 0.0) {
                 throw new UnsupportedOperationException("OGG/Vorbis seeking only supported for time = 0");
@@ -173,7 +174,7 @@ public class OGGLoader implements AssetLoader {
      * of bytes in the input is returned.
      */
     private int getOggTotalBytes(int dataBytesTotal){
-        // Vorbis stream could have more samples than than the duration of the sound
+        // Vorbis stream could have more samples than the duration of the sound.
         // Must truncate.
         int numSamples;
         if (oggStream instanceof CachedOggStream){
@@ -259,6 +260,7 @@ public class OGGLoader implements AssetLoader {
         }
     }
     
+    @SuppressWarnings("unchecked")
     private AudioData load(InputStream in, boolean readStream, boolean streamCache) throws IOException{
         if (readStream && streamCache){
             oggStream = new CachedOggStream(in);
@@ -294,6 +296,7 @@ public class OGGLoader implements AssetLoader {
         }
     }
 
+    @Override
     public Object load(AssetInfo info) throws IOException {
         if (!(info.getKey() instanceof AudioKey)){
             throw new IllegalArgumentException("Audio assets must be loaded using an AudioKey");
@@ -308,7 +311,7 @@ public class OGGLoader implements AssetLoader {
             in = info.openStream();
             AudioData data = load(in, readStream, streamCache);
             if (readStream && !streamCache) {
-                // we still need the stream in this case ..
+                // We still need the stream in this case.
                 in = null;
             }
             return data;

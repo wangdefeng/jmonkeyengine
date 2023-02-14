@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,11 +83,50 @@ public class GlfwKeyInput implements KeyInput {
 
     @Override
     public void initialize() {
+        if (!context.isRenderable()) {
+            return;
+        }
+        initCallbacks();
 
+        initialized = true;
+        logger.fine("Keyboard created.");
+    }
+
+    /**
+     * Re-initializes the key input context window specific callbacks
+     */
+    public void resetContext() {
         if (!context.isRenderable()) {
             return;
         }
 
+        closeCallbacks();
+        initCallbacks();
+    }
+
+    private void closeCallbacks() {
+        keyCallback.close();
+        charCallback.close();
+    }
+
+    /**
+     * Determine the name of the specified key in the current system language.
+     *
+     * @param jmeKey the keycode from {@link com.jme3.input.KeyInput}
+     * @return the name of the key, or null if unknown
+     */
+    @Override
+    public String getKeyName(int jmeKey) {
+        int glfwKey = GlfwKeyMap.fromJmeKeyCode(jmeKey);
+        if (glfwKey == GLFW_KEY_UNKNOWN) {
+            return null;
+        }
+
+        String result = glfwGetKeyName(glfwKey, 0);
+        return result;
+    }
+
+    private void initCallbacks() {
         glfwSetKeyCallback(context.getWindowHandle(), keyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(final long window, final int key, final int scancode, final int action, final int mods) {
@@ -122,9 +161,6 @@ public class GlfwKeyInput implements KeyInput {
                 keyInputEvents.add(released);
             }
         });
-
-        initialized = true;
-        logger.fine("Keyboard created.");
     }
 
     public int getKeyCount() {
@@ -149,8 +185,7 @@ public class GlfwKeyInput implements KeyInput {
             return;
         }
 
-        keyCallback.close();
-        charCallback.close();
+        closeCallbacks();
         logger.fine("Keyboard destroyed.");
     }
 

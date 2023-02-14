@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -101,7 +101,7 @@ public class ConnectorAdapter extends Thread
         // if a TCP outbound queue fills to capacity and a client sends
         // in such a way that they block TCP message handling then if the HostedConnection
         // on the server is similarly blocked then the TCP network buffers may
-        // all get full and no outbound messages move and we forever block
+        // all get full, and no outbound messages move, and we forever block
         // on the queue.
         // However, in practice this can't really happen... or at least it's
         // the sign of other really bad things.
@@ -152,6 +152,7 @@ public class ConnectorAdapter extends Thread
         errorHandler.handleError( this, e );
     }
  
+    @Override
     public void run()
     {
         MessageBuffer messageBuffer = protocol.createBuffer();
@@ -203,6 +204,7 @@ public class ConnectorAdapter extends Thread
             }
         }
         
+        @Override
         public void run()
         {
             while( go.get() ) {

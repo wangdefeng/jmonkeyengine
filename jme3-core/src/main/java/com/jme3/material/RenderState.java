@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2023 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -311,7 +311,6 @@ public class RenderState implements Cloneable, Savable {
          * Result.rgb = Source Alpha * Source Color +
          *          (1 - Source Alpha) * Dest Color -&gt; (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
          * Result.a = 1 * Source Alpha + 1 * Dest Alpha -&gt; (GL_ONE, GL_ONE)
-         * 
          */
         AlphaSumA,
         /**
@@ -346,12 +345,12 @@ public class RenderState implements Cloneable, Savable {
          * <p>
          * These attributes can be set by using the following methods:
          * <ul>
-         * <li>{@link RenderState#setBlendEquation(BlendEquation)}<br/>
-         * <li>{@link RenderState#setBlendEquationAlpha(BlendEquationAlpha)}<br/>
-         * <li>{@link RenderState#setCustomBlendFactors(BlendFunc, BlendFunc, BlendFunc, BlendFunc)}<br/>
+         * <li>{@link RenderState#setBlendEquation(BlendEquation)}
+         * <li>{@link RenderState#setBlendEquationAlpha(BlendEquationAlpha)}
+         * <li>{@link RenderState#setCustomBlendFactors(BlendFunc, BlendFunc, BlendFunc, BlendFunc)}
          * </ul>
          * <p>
-         * Result.RGB = BlendEquation( sfactorRGB * Source.RGB , dfactorRGB * Destination.RGB )<br/>
+         * Result.RGB = BlendEquation( sfactorRGB * Source.RGB , dfactorRGB * Destination.RGB )<br>
          * Result.A = BlendEquationAlpha( sfactorAlpha * Source.A , dfactorAlpha * Destination.A )
          */
         Custom
@@ -480,12 +479,17 @@ public class RenderState implements Cloneable, Savable {
     StencilOperation backStencilDepthPassOperation = StencilOperation.Keep;
     TestFunction frontStencilFunction = TestFunction.Always;
     TestFunction backStencilFunction = TestFunction.Always;
+    int frontStencilReference = 0;
+    int backStencilReference = 0;
+    int frontStencilMask = Integer.MAX_VALUE;
+    int backStencilMask = Integer.MAX_VALUE;
     int cachedHashCode = -1;
     BlendFunc sfactorRGB = BlendFunc.One;
     BlendFunc dfactorRGB = BlendFunc.One;
     BlendFunc sfactorAlpha = BlendFunc.One;
     BlendFunc dfactorAlpha = BlendFunc.One;
             
+    @Override
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule oc = ex.getCapsule(this);
         oc.write(true, "pointSprite", false);
@@ -502,19 +506,23 @@ public class RenderState implements Cloneable, Savable {
         oc.write(frontStencilStencilFailOperation, "frontStencilStencilFailOperation", StencilOperation.Keep);
         oc.write(frontStencilDepthFailOperation, "frontStencilDepthFailOperation", StencilOperation.Keep);
         oc.write(frontStencilDepthPassOperation, "frontStencilDepthPassOperation", StencilOperation.Keep);
-        oc.write(backStencilStencilFailOperation, "frontStencilStencilFailOperation", StencilOperation.Keep);
+        oc.write(backStencilStencilFailOperation, "backStencilStencilFailOperation", StencilOperation.Keep);
         oc.write(backStencilDepthFailOperation, "backStencilDepthFailOperation", StencilOperation.Keep);
         oc.write(backStencilDepthPassOperation, "backStencilDepthPassOperation", StencilOperation.Keep);
         oc.write(frontStencilFunction, "frontStencilFunction", TestFunction.Always);
         oc.write(backStencilFunction, "backStencilFunction", TestFunction.Always);
+        oc.write(frontStencilReference, "frontStencilReference", 0);
+        oc.write(backStencilReference, "backStencilReference", 0);
+        oc.write(frontStencilMask, "frontStencilMask", Integer.MAX_VALUE);
+        oc.write(backStencilMask, "backStencilMask", Integer.MAX_VALUE);
         oc.write(blendEquation, "blendEquation", BlendEquation.Add);
         oc.write(blendEquationAlpha, "blendEquationAlpha", BlendEquationAlpha.InheritColor);
         oc.write(depthFunc, "depthFunc", TestFunction.LessOrEqual);
         oc.write(lineWidth, "lineWidth", 1);
-        oc.write(sfactorRGB, "sfactorRGB", sfactorRGB);
-        oc.write(dfactorRGB, "dfactorRGB", dfactorRGB);
-        oc.write(sfactorAlpha, "sfactorAlpha", sfactorAlpha);
-        oc.write(dfactorAlpha, "dfactorAlpha", dfactorAlpha);
+        oc.write(sfactorRGB, "sfactorRGB", BlendFunc.One);
+        oc.write(dfactorRGB, "dfactorRGB", BlendFunc.One);
+        oc.write(sfactorAlpha, "sfactorAlpha", BlendFunc.One);
+        oc.write(dfactorAlpha, "dfactorAlpha", BlendFunc.One);
 
         // Only "additional render state" has them set to false by default
         oc.write(applyWireFrame, "applyWireFrame", true);
@@ -529,6 +537,7 @@ public class RenderState implements Cloneable, Savable {
 
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule ic = im.getCapsule(this);
         wireframe = ic.readBoolean("wireframe", false);
@@ -549,13 +558,17 @@ public class RenderState implements Cloneable, Savable {
         backStencilDepthPassOperation = ic.readEnum("backStencilDepthPassOperation", StencilOperation.class, StencilOperation.Keep);
         frontStencilFunction = ic.readEnum("frontStencilFunction", TestFunction.class, TestFunction.Always);
         backStencilFunction = ic.readEnum("backStencilFunction", TestFunction.class, TestFunction.Always);
+        frontStencilReference = ic.readInt("frontStencilReference", 0);
+        backStencilReference = ic.readInt("backStencilReference", 0);
+        frontStencilMask = ic.readInt("frontStencilMask", Integer.MAX_VALUE);
+        backStencilMask = ic.readInt("backStencilMask", Integer.MAX_VALUE);
         blendEquation = ic.readEnum("blendEquation", BlendEquation.class, BlendEquation.Add);
         blendEquationAlpha = ic.readEnum("blendEquationAlpha", BlendEquationAlpha.class, BlendEquationAlpha.InheritColor);
         depthFunc = ic.readEnum("depthFunc", TestFunction.class, TestFunction.LessOrEqual);
         lineWidth = ic.readFloat("lineWidth", 1);
         sfactorRGB = ic.readEnum("sfactorRGB", BlendFunc.class, BlendFunc.One);
-        dfactorAlpha = ic.readEnum("dfactorRGB", BlendFunc.class, BlendFunc.One);
-        sfactorRGB = ic.readEnum("sfactorAlpha", BlendFunc.class, BlendFunc.One);
+        dfactorRGB = ic.readEnum("dfactorRGB", BlendFunc.class, BlendFunc.One);
+        sfactorAlpha = ic.readEnum("sfactorAlpha", BlendFunc.class, BlendFunc.One);
         dfactorAlpha = ic.readEnum("dfactorAlpha", BlendFunc.class, BlendFunc.One);
 
 
@@ -586,9 +599,12 @@ public class RenderState implements Cloneable, Savable {
     }
 
     /**
-     * returns true if the given renderState is equal to this one
-     * @param o the renderState to compare to
-     * @return true if the renderStates are equal
+     * Tests for equivalence with the argument. If {@code o} is null, false is
+     * returned. Either way, the current instance is unaffected.
+     *
+     * @param o the object to compare (may be null, unaffected)
+     * @return true if {@code this} and {@code o} are equivalent,
+     *     otherwise false
      */
     @Override
     public boolean equals(Object o) {
@@ -693,6 +709,18 @@ public class RenderState implements Cloneable, Savable {
             if (backStencilFunction != rs.backStencilFunction) {
                 return false;
             }
+            if (frontStencilMask != rs.frontStencilMask) {
+                return false;
+            }
+            if (backStencilMask != rs.backStencilMask) {
+                return false;
+            }
+            if (frontStencilReference != rs.frontStencilReference) {
+                return false;
+            }
+            if (backStencilReference != rs.backStencilReference) {
+                return false;
+            }
         }
 
         if(lineWidth != rs.lineWidth){
@@ -700,33 +728,6 @@ public class RenderState implements Cloneable, Savable {
         }
 
         return true;
-    }
-
-    /**
-     * @deprecated Does nothing. Point sprite is already enabled by default for
-     * all supported platforms. jME3 does not support rendering conventional
-     * point clouds.
-     */
-    @Deprecated
-    public void setPointSprite(boolean pointSprite) {
-    }
-
-    /**
-     * @deprecated Does nothing. To use alpha test, set the
-     * <code>AlphaDiscardThreshold</code> material parameter.
-     * @param alphaFallOff does nothing
-     */
-    @Deprecated
-    public void setAlphaFallOff(float alphaFallOff) {
-    }
-
-    /**
-     * @deprecated Does nothing. To use alpha test, set the
-     * <code>AlphaDiscardThreshold</code> material parameter.
-     * @param alphaTest does nothing
-     */
-    @Deprecated
-    public void setAlphaTest(boolean alphaTest) {
     }
 
     /**
@@ -770,7 +771,7 @@ public class RenderState implements Cloneable, Savable {
      * already in the color buffer. The blending operation is determined
      * by the {@link BlendMode}. For example, the {@link BlendMode#Additive}
      * will add the input pixel's color to the color already in the color buffer:
-     * <br/>
+     * <br>
      * <code>Result = Source Color + Destination Color</code>
      *
      * @param blendMode The blend mode to use. Set to {@link BlendMode#Off}
@@ -786,10 +787,10 @@ public class RenderState implements Cloneable, Savable {
      * Set the blending equation for the color component (RGB).
      * <p>
      * The blending equation determines, how the RGB values of the input pixel
-     * will be blended with the RGB values of the pixel already in the color buffer.<br/>
+     * will be blended with the RGB values of the pixel already in the color buffer.<br>
      * For example, {@link BlendEquation#Add} will add the input pixel's color
      * to the color already in the color buffer:
-     * <br/>
+     * <br>
      * <code>Result = Source Color + Destination Color</code>
      * <p>
      * <b>Note:</b> This gets only used in {@link BlendMode#Custom} mode.
@@ -806,10 +807,10 @@ public class RenderState implements Cloneable, Savable {
      * Set the blending equation for the alpha component.
      * <p>
      * The alpha blending equation determines, how the alpha values of the input pixel
-     * will be blended with the alpha values of the pixel already in the color buffer.<br/>
+     * will be blended with the alpha values of the pixel already in the color buffer.<br>
      * For example, {@link BlendEquationAlpha#Add} will add the input pixel's color
      * to the color already in the color buffer:
-     * <br/>
+     * <br>
      * <code>Result = Source Color + Destination Color</code>
      * <p>
      * <b>Note:</b> This gets only used in {@link BlendMode#Custom} mode.
@@ -899,10 +900,10 @@ public class RenderState implements Cloneable, Savable {
      * typically with positive Z pointing into the screen.
      * Typical values are (1.0f, 1.0f) or (-1.0f, -1.0f)
      *
-     * @see <a href="http://www.opengl.org/resources/faq/technical/polygonoffset.htm" rel="nofollow">http://www.opengl.org/resources/faq/technical/polygonoffset.htm</a>
+     * @see <a href="http://www.opengl.org/resources/faq/technical/polygonoffset.htm">http://www.opengl.org/resources/faq/technical/polygonoffset.htm</a>
      * @param factor scales the maximum Z slope, with respect to X or Y of the polygon
      * @param units scales the minimum resolvable depth buffer value
-     **/
+     */
     public void setPolyOffset(float factor, float units) {
         applyPolyOffset = true;
         if (factor == 0 && units == 0) {
@@ -965,8 +966,9 @@ public class RenderState implements Cloneable, Savable {
     }
 
     /**
-     * Set the depth conparison function to the given TestFunction 
+     * Set the depth comparison function to the given TestFunction
      * default is LessOrEqual (GL_LEQUAL)
+     *
      * @see TestFunction
      * @see RenderState#setDepthTest(boolean) 
      * @param depthFunc the depth comparison function
@@ -978,16 +980,12 @@ public class RenderState implements Cloneable, Savable {
     }
 
     /**
-     * @deprecated
-     */
-    @Deprecated
-    public void setAlphaFunc(TestFunction alphaFunc) {
-    }
-
-    /**
      * Sets the mesh line width.
      * Use this in conjunction with {@link #setWireframe(boolean)} or with a mesh in
      * {@link com.jme3.scene.Mesh.Mode#Lines} mode.
+     * Note: this does not work in OpenGL core profile. It only works in
+     * compatibility profile.
+     *
      * @param lineWidth the line width.
      */
     public void setLineWidth(float lineWidth) {
@@ -1161,7 +1159,81 @@ public class RenderState implements Cloneable, Savable {
     }
 
     /**
-     * Retrieve the blend equation.
+     * Sets the front stencil mask.
+     *
+     * @param frontStencilMask the desired bitmask (default=0x7fffffff)
+     */
+    public void setFrontStencilMask(int frontStencilMask) {
+        this.frontStencilMask = frontStencilMask;
+    }
+
+    /**
+     * Sets the back stencil mask.
+     *
+     * @param backStencilMask the desired bitmask (default=0x7fffffff)
+     */
+    public void setBackStencilMask(int backStencilMask) {
+        this.backStencilMask = backStencilMask;
+    }
+
+    /**
+     * Sets the front stencil reference.
+     *
+     * @param frontStencilReference the desired reference (default=0x0)
+     */
+    public void setFrontStencilReference(int frontStencilReference) {
+        this.frontStencilReference = frontStencilReference;
+    }
+
+    /**
+     * Sets the back stencil reference.
+     *
+     * @param backStencilReference the desired bitmask (default=0x0)
+     */
+    public void setBackStencilReference(int backStencilReference) {
+        this.backStencilReference = backStencilReference;
+    }
+
+    /**
+     * Returns the front stencil mask.
+     *
+     * @return the bitmask applied before comparing the front stencil to its
+     *     reference value
+     */
+    public int getFrontStencilMask() {
+        return frontStencilMask;
+    }
+
+    /**
+     * Returns the front stencil reference.
+     *
+     * @return the reference value for the front stencil
+     */
+    public int getFrontStencilReference() {
+        return frontStencilReference;
+    }
+
+    /**
+     * Returns the back stencil mask.
+     *
+     * @return the bitmask applied before comparing the back stencil to its
+     *     reference value
+     */
+    public int getBackStencilMask() {
+        return backStencilMask;
+    }
+
+    /**
+     * Returns the back stencil reference.
+     *
+     * @return the reference value for the back stencil
+     */
+    public int getBackStencilReference() {
+        return backStencilReference;
+    }
+
+    /**
+     * Returns the blend equation.
      *
      * @return the blend equation.
      */
@@ -1170,7 +1242,7 @@ public class RenderState implements Cloneable, Savable {
     }
     
     /**
-     * Retrieve the blend equation used for the alpha component.
+     * Returns the blend equation used for the alpha component.
      *
      * @return the blend equation for the alpha component.
      */
@@ -1179,7 +1251,7 @@ public class RenderState implements Cloneable, Savable {
     }
 
     /**
-     * Retrieve the blend mode.
+     * Returns the blend mode.
      *
      * @return the blend mode.
      */
@@ -1188,7 +1260,7 @@ public class RenderState implements Cloneable, Savable {
     }
     
     /**
-     * Provides the source factor for the RGB components in 
+     * Returns the source factor for the RGB components in
      * <code>BlendMode.Custom</code>.
      * 
      * @return the custom source factor for RGB components.
@@ -1198,7 +1270,7 @@ public class RenderState implements Cloneable, Savable {
     }
     
     /**
-     * Provides the destination factor for the RGB components in 
+     * Returns the destination factor for the RGB components in
      * <code>BlendMode.Custom</code>.
      * 
      * @return the custom destination factor for RGB components.
@@ -1208,7 +1280,7 @@ public class RenderState implements Cloneable, Savable {
     }
     
     /**
-     * Provides the source factor for the alpha component in 
+     * Returns the source factor for the alpha component in
      * <code>BlendMode.Custom</code>.
      * 
      * @return the custom destination factor for alpha component.
@@ -1218,7 +1290,7 @@ public class RenderState implements Cloneable, Savable {
     }
     
     /**
-     * Provides the destination factor for the alpha component in 
+     * Returns the destination factor for the alpha component in
      * <code>BlendMode.Custom</code>.
      * 
      * @return the custom destination factor for alpha component.
@@ -1230,7 +1302,6 @@ public class RenderState implements Cloneable, Savable {
     /**
      * @return true
      * @deprecated Always returns true since point sprite is always enabled.
-     * @see #setPointSprite(boolean)
      */
     @Deprecated
     public boolean isPointSprite() {
@@ -1414,7 +1485,7 @@ public class RenderState implements Cloneable, Savable {
     }
 
     /**
-     *
+     * @return value for use in hashing
      */
     public int contentHashCode() {
         if (cachedHashCode == -1){
@@ -1455,7 +1526,7 @@ public class RenderState implements Cloneable, Savable {
      * Merges <code>this</code> state and <code>additionalState</code> into
      * the parameter <code>state</code> based on a specific criteria.
      *
-     * <p>The criteria for this merge is the following:<br/>
+     * <p>The criteria for this merge is the following:<br>
      * For every given property, such as alpha test or depth write, check
      * if it was modified from the original in the <code>additionalState</code>
      * if it was modified, then copy the property from the <code>additionalState</code>

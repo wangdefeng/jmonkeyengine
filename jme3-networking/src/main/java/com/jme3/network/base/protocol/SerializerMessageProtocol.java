@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,8 +33,6 @@ package com.jme3.network.base.protocol;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
-
 import com.jme3.network.Message;
 import com.jme3.network.base.MessageBuffer;
 import com.jme3.network.base.MessageProtocol;
@@ -61,6 +59,7 @@ public class SerializerMessageProtocol implements MessageProtocol {
      *  and the (short length) + data protocol.  If target is null
      *  then a 32k byte buffer will be created and filled.
      */
+    @Override
     public ByteBuffer toByteBuffer( Message message, ByteBuffer target ) {
     
         // Could let the caller pass their own in       
@@ -84,6 +83,7 @@ public class SerializerMessageProtocol implements MessageProtocol {
      *  Creates and returns a message from the properly sized byte buffer
      *  using com.jme3.network.serializing.Serializer.
      */   
+    @Override
     public Message toMessage( ByteBuffer bytes ) {
         try {
             return (Message)Serializer.readClassAndObject(bytes);
@@ -92,6 +92,7 @@ public class SerializerMessageProtocol implements MessageProtocol {
         }         
     }
       
+    @Override
     public MessageBuffer createBuffer() {
         // Defaulting to LazyMessageBuffer
         return new LazyMessageBuffer(this);

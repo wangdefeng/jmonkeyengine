@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2022 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,15 +49,15 @@ import java.util.prefs.Preferences;
  * By default only the {@link JmeContext context} uses the configuration,
  * however the user may set and retrieve the settings as well.
  * The settings can be stored either in the Java preferences
- * (using {@link #save(java.lang.String) } or
- * a .properties file (using {@link #save(java.io.OutputStream) }.
+ * (using {@link #save(java.lang.String) }) or
+ * a .properties file (using {@link #save(java.io.OutputStream) }).
  *
  * @author Kirill Vainer
  */
 public final class AppSettings extends HashMap<String, Object> {
 
     private static final long serialVersionUID = 1L;
-    
+
     private static final AppSettings defaults = new AppSettings(false);
 
     /**
@@ -69,19 +69,6 @@ public final class AppSettings extends HashMap<String, Object> {
      * @see AppSettings#setRenderer(java.lang.String)
      */
     public static final String LWJGL_OPENGL2 = "LWJGL-OpenGL2";
-
-    /**
-     * Use LWJGL as the display system and force using the core OpenGL3.0 renderer.
-     * <p>
-     * If the underlying system does not support OpenGL3.0, then the context
-     * initialization will throw an exception. Note that currently jMonkeyEngine
-     * does not have any shaders that support OpenGL3.0 therefore this 
-     * option is not useful.
-     * <p>
-     *
-     * @see AppSettings#setRenderer(java.lang.String)
-     */
-    public static final String LWJGL_OPENGL30 = "LWJGL-OpenGL30";
 
     /**
      * Use LWJGL as the display system and force using the core OpenGL3.2 renderer.
@@ -98,6 +85,33 @@ public final class AppSettings extends HashMap<String, Object> {
      */
     @Deprecated
     public static final String LWJGL_OPENGL3 = "LWJGL-OpenGL3";
+
+
+    /**
+     * Use LWJGL as the display system and force using the core OpenGL3.0 renderer.
+     * <p>
+     * If the underlying system does not support OpenGL3.0, then the context
+     * initialization will throw an exception. Note that currently jMonkeyEngine
+     * does not have any shaders that support OpenGL3.0 therefore this
+     * option is not useful.
+     * </p>
+     *
+     * @see AppSettings#setRenderer(java.lang.String)
+     */
+    public static final String LWJGL_OPENGL30 = "LWJGL-OpenGL30";
+
+    /**
+     * Use LWJGL as the display system and force using the core OpenGL3.1 renderer.
+     * <p>
+     * If the underlying system does not support OpenGL3.1, then the context
+     * initialization will throw an exception. Note that currently jMonkeyEngine
+     * does not have any shaders that support OpenGL3.0 therefore this
+     * option is not useful.
+     * </p>
+     *
+     * @see AppSettings#setRenderer(java.lang.String)
+     */
+    public static final String LWJGL_OPENGL31 = "LWJGL-OpenGL31";
 
     /**
      * Use LWJGL as the display system and force using the core OpenGL3.2 renderer.
@@ -223,7 +237,7 @@ public final class AppSettings extends HashMap<String, Object> {
      * @see AppSettings#setAudioRenderer(java.lang.String)
      */
     public static final String ANDROID_OPENAL_SOFT = "OpenAL_SOFT";
-    
+
     /**
      * Use JogAmp's JOGL as the display system, with the OpenGL forward compatible profile
      * <p>
@@ -232,28 +246,31 @@ public final class AppSettings extends HashMap<String, Object> {
      * @see AppSettings#setRenderer(java.lang.String)
      */
     public static final String JOGL_OPENGL_FORWARD_COMPATIBLE = "JOGL_OPENGL_FORWARD_COMPATIBLE";
-    
+
     /**
-     * Use JogAmp's JOGL as the display system with the backward compatible profile
+     * Use JogAmp's JOGL as the display system, with the backward compatible profile
      * <p>
      * N.B: This backend is EXPERIMENTAL
      *
      * @see AppSettings#setRenderer(java.lang.String)
      */
     public static final String JOGL_OPENGL_BACKWARD_COMPATIBLE = "JOGL_OPENGL_BACKWARD_COMPATIBLE";
-    
+
     /**
-     * Use JogAmp's JOAL as the display system
+     * Use JogAmp's JOAL as the audio renderer.
      * <p>
      * N.B: This backend is EXPERIMENTAL
      *
-     * @see AppSettings#setRenderer(java.lang.String)
+     * @see AppSettings#setAudioRenderer(java.lang.String)
      */
     public static final String JOAL = "JOAL";
 
     static {
+        defaults.put("CenterWindow", true);
         defaults.put("Width", 640);
         defaults.put("Height", 480);
+        defaults.put("WindowWidth", Integer.MIN_VALUE);
+        defaults.put("WindowHeight", Integer.MIN_VALUE);
         defaults.put("BitsPerPixel", 24);
         defaults.put("Frequency", 60);
         defaults.put("DepthBits", 24);
@@ -261,20 +278,23 @@ public final class AppSettings extends HashMap<String, Object> {
         defaults.put("Samples", 0);
         defaults.put("Fullscreen", false);
         defaults.put("Title", JmeVersion.FULL_NAME);
-        defaults.put("Renderer", LWJGL_OPENGL2);
+        defaults.put("Renderer", LWJGL_OPENGL32);
         defaults.put("AudioRenderer", LWJGL_OPENAL);
         defaults.put("DisableJoysticks", true);
         defaults.put("UseInput", true);
-        defaults.put("VSync", false);
+        defaults.put("VSync", true);
         defaults.put("FrameRate", -1);
         defaults.put("SettingsDialogImage", "/com/jme3/app/Monkey.png");
         defaults.put("MinHeight", 0);
         defaults.put("MinWidth", 0);
-        defaults.put("GammaCorrection", false);
+        defaults.put("GammaCorrection", true);
         defaults.put("Resizable", false);
         defaults.put("SwapBuffers", true);
         defaults.put("OpenCL", false);
         defaults.put("OpenCLPlatformChooser", DefaultPlatformChooser.class.getName());
+        defaults.put("UseRetinaFrameBuffer", false);
+        defaults.put("WindowYPosition", 0);
+        defaults.put("WindowXPosition", 0);
         //  defaults.put("Icons", null);
     }
 
@@ -315,7 +335,7 @@ public final class AppSettings extends HashMap<String, Object> {
      */
     public void mergeFrom(AppSettings other) {
         for (String key : other.keySet()) {
-            if( !this.containsKey(key) ) {
+            if (!this.containsKey(key)) {
                 put(key, other.get(key));
             }
         }
@@ -404,16 +424,16 @@ public final class AppSettings extends HashMap<String, Object> {
                     // Try loading using new method
                     switch (key.charAt(0)) {
                         case 'I':
-                            put(key.substring(2), prefs.getInt(key, (Integer) 0));
+                            put(key.substring(2), prefs.getInt(key, 0));
                             break;
                         case 'F':
-                            put(key.substring(2), prefs.getFloat(key, (Float) 0f));
+                            put(key.substring(2), prefs.getFloat(key, 0f));
                             break;
                         case 'S':
-                            put(key.substring(2), prefs.get(key, (String) null));
+                            put(key.substring(2), prefs.get(key, null));
                             break;
                         case 'B':
-                            put(key.substring(2), prefs.getBoolean(key, (Boolean) false));
+                            put(key.substring(2), prefs.getBoolean(key, false));
                             break;
                         default:
                             throw new UnsupportedOperationException("Undefined setting type: " + key.charAt(0));
@@ -480,6 +500,9 @@ public final class AppSettings extends HashMap<String, Object> {
      * Get an integer from the settings.
      * <p>
      * If the key is not set, then 0 is returned.
+     *
+     * @param key the key of an integer setting
+     * @return the corresponding value, or 0 if not set
      */
     public int getInteger(String key) {
         Integer i = (Integer) get(key);
@@ -494,6 +517,9 @@ public final class AppSettings extends HashMap<String, Object> {
      * Get a boolean from the settings.
      * <p>
      * If the key is not set, then false is returned.
+     *
+     * @param key the key of a boolean setting
+     * @return the corresponding value, or false if not set
      */
     public boolean getBoolean(String key) {
         Boolean b = (Boolean) get(key);
@@ -508,6 +534,9 @@ public final class AppSettings extends HashMap<String, Object> {
      * Get a string from the settings.
      * <p>
      * If the key is not set, then null is returned.
+     *
+     * @param key the key of a string setting
+     * @return the corresponding value, or null if not set
      */
     public String getString(String key) {
         String s = (String) get(key);
@@ -522,6 +551,9 @@ public final class AppSettings extends HashMap<String, Object> {
      * Get a float from the settings.
      * <p>
      * If the key is not set, then 0.0 is returned.
+     *
+     * @param key the key of a float setting
+     * @return the corresponding value, or 0 if not set
      */
     public float getFloat(String key) {
         Float f = (Float) get(key);
@@ -534,6 +566,9 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Set an integer on the settings.
+     *
+     * @param key the desired key
+     * @param value the desired integer value
      */
     public void putInteger(String key, int value) {
         put(key, Integer.valueOf(value));
@@ -541,6 +576,9 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Set a boolean on the settings.
+     *
+     * @param key the desired key
+     * @param value the desired boolean value
      */
     public void putBoolean(String key, boolean value) {
         put(key, Boolean.valueOf(value));
@@ -548,6 +586,9 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Set a string on the settings.
+     *
+     * @param key the desired key
+     * @param value the desired string value
      */
     public void putString(String key, String value) {
         put(key, value);
@@ -555,6 +596,9 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Set a float on the settings.
+     *
+     * @param key the desired key
+     * @param value the desired float value
      */
     public void putFloat(String key, float value) {
         put(key, Float.valueOf(value));
@@ -657,10 +701,12 @@ public final class AppSettings extends HashMap<String, Object> {
      * <li>AppSettings.LWJGL_OPENGL3 - Force OpenGL3.3 compatability</li>
      * <li>AppSettings.LWJGL_OPENGL_ANY - Choose an appropriate
      * OpenGL version based on system capabilities</li>
+     * <li>AppSettings.JOGL_OPENGL_BACKWARD_COMPATIBLE</li>
+     * <li>AppSettings.JOGL_OPENGL_FORWARD_COMPATIBLE</li>
      * <li>null - Disable graphics rendering</li>
      * </ul>
      * @param renderer The renderer to set
-     * (Default: AppSettings.LWJGL_OPENGL2)
+     * (Default: AppSettings.LWJGL_OPENGL32)
      */
     public void setRenderer(String renderer) {
         putString("Renderer", renderer);
@@ -680,6 +726,7 @@ public final class AppSettings extends HashMap<String, Object> {
      * Set the audio renderer to use. One of:<br>
      * <ul>
      * <li>AppSettings.LWJGL_OPENAL - Default for LWJGL</li>
+     * <li>AppSettings.JOAL</li>
      * <li>null - Disable audio</li>
      * </ul>
      * @param audioRenderer
@@ -690,7 +737,7 @@ public final class AppSettings extends HashMap<String, Object> {
     }
 
     /**
-     * @param value the width for the rendering display.
+     * @param value the width for the default framebuffer.
      * (Default: 640)
      */
     public void setWidth(int value) {
@@ -698,7 +745,7 @@ public final class AppSettings extends HashMap<String, Object> {
     }
 
     /**
-     * @param value the height for the rendering display.
+     * @param value the height for the default framebuffer.
      * (Default: 480)
      */
     public void setHeight(int value) {
@@ -706,7 +753,8 @@ public final class AppSettings extends HashMap<String, Object> {
     }
 
     /**
-     * Set the resolution for the rendering display
+     * Set the resolution for the default framebuffer
+     * Use {@link #setWindowSize(int, int)} instead, for HiDPI display support.
      * @param width The width
      * @param height The height
      * (Default: 640x480)
@@ -716,6 +764,16 @@ public final class AppSettings extends HashMap<String, Object> {
         setHeight(height);
     }
 
+    /**
+     * Set the size of the window
+     * 
+     * @param width The width in pixels (default = width of the default framebuffer)
+     * @param height The height in pixels (default = height of the default framebuffer)
+     */
+    public void setWindowSize(int width, int height) {
+        putInteger("WindowWidth", width);
+        putInteger("WindowHeight", height);
+    }
 
     /**
      * @param value the minimum width the settings window will allow for the rendering display.
@@ -845,10 +903,10 @@ public final class AppSettings extends HashMap<String, Object> {
     }
 
     /**
-     * Set to true to enable vertical-synchronization, limiting and synchronizing
-     * every frame rendered to the monitor's refresh rate.
-     * @param value
-     * (Default: false)
+     * Enable or disable vertical synchronization. If enabled, rendering will be
+     * synchronized with the display's refresh interval.
+     *
+     * @param value true to enable, false to disable (Default : true)
      */
     public void setVSync(boolean value) {
         putBoolean("VSync", value);
@@ -860,7 +918,8 @@ public final class AppSettings extends HashMap<String, Object> {
      * See <a href="http://en.wikipedia.org/wiki/Quad_buffering">http://en.wikipedia.org/wiki/Quad_buffering</a><br>
      * Once enabled, filters or scene processors that handle 3D stereo rendering
      * could use this feature to render using hardware 3D stereo.</p>
-     * (Default: false)
+     *
+     * @param value true to enable 3-D stereo, false to disable (default=false)
      */
     public void setStereo3D(boolean value){
         putBoolean("Stereo3D", value);
@@ -868,12 +927,12 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Sets the application icons to be used, with the most preferred first.
-     * For Windows you should supply at least one 16x16 icon and one 32x32. The former is used for the title/task bar,
+     * For Windows, you should supply at least one 16x16 icon and one 32x32. The former is used for the title/task bar,
      * the latter for the alt-tab icon.
      * Linux (and similar platforms) expect one 32x32 icon.
      * Mac OS X should be supplied one 128x128 icon.
-     * <br/>
-     * The icon is used for the settings window, and the LWJGL render window. Not currently supported for JOGL.
+     * <br>
+     * The icon is used for the settings window, and the LWJGL render window.
      * Note that a bug in Java 6 (bug ID 6445278, currently hidden but available in Google cache) currently prevents
      * the icon working for alt-tab on the settings dialog in Windows.
      *
@@ -899,11 +958,13 @@ public final class AppSettings extends HashMap<String, Object> {
     }
 
     /**
-     * Enables Gamma Correction
-     * This requires that the GPU supports GL_ARB_framebuffer_sRGB and will
-     * disabled otherwise.
-     * @param gammaCorrection
-     * (Default : true)
+     * Enable or disable gamma correction. If enabled, the main framebuffer will
+     * be configured for sRGB colors, and sRGB images will be linearized.
+     *
+     * Gamma correction requires a GPU that supports GL_ARB_framebuffer_sRGB;
+     * otherwise this setting will be ignored.
+     *
+     * @param gammaCorrection true to enable, false to disable (Default : true)
      */
     public void setGammaCorrection(boolean gammaCorrection) {
         putBoolean("GammaCorrection", gammaCorrection);
@@ -911,6 +972,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the framerate.
+     *
+     * @return the maximum rate (in frames per second), or -1 for unlimited
      * @see #setFrameRate(int)
      */
     public int getFrameRate() {
@@ -919,6 +982,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the use input state.
+     *
+     * @return true if input is enabled, false if it's disabled
      * @see #setUseInput(boolean)
      */
     public boolean useInput() {
@@ -927,6 +992,9 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the renderer
+     *
+     * @return the graphics renderer's name and version,
+     * for example "LWJGL-OpenGL33"
      * @see #setRenderer(java.lang.String)
      */
     public String getRenderer() {
@@ -935,6 +1003,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the width
+     *
+     * @return the width of the default framebuffer (in pixels)
      * @see #setWidth(int)
      */
     public int getWidth() {
@@ -943,6 +1013,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the height
+     *
+     * @return the height of the default framebuffer (in pixels)
      * @see #setHeight(int)
      */
     public int getHeight() {
@@ -950,7 +1022,31 @@ public final class AppSettings extends HashMap<String, Object> {
     }
 
     /**
+     * Get the width of the window
+     *
+     * @return the width of the window (in pixels)
+     * @see #setWindowSize(int, int)
+     */
+    public int getWindowWidth() {
+        int w = getInteger("WindowWidth");
+        return w != Integer.MIN_VALUE ? w : getWidth();
+    }
+
+    /**
+     * Get the height of the window
+     *
+     * @return the height of the window (in pixels)
+     * @see #setWindowSize(int, int)
+     */
+    public int getWindowHeight() {
+        int h = getInteger("WindowHeight");
+        return h != Integer.MIN_VALUE ? h : getHeight();
+    }
+
+    /**
      * Get the width
+     *
+     * @return the minimum width for the rendering display (in pixels)
      * @see #setWidth(int)
      */
     public int getMinWidth() {
@@ -959,6 +1055,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the height
+     *
+     * @return the minimum height for the rendering display (in pixels)
      * @see #setHeight(int)
      */
     public int getMinHeight() {
@@ -967,6 +1065,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the bits per pixel
+     *
+     * @return the number of color bits per rendered pixel
      * @see #setBitsPerPixel(int)
      */
     public int getBitsPerPixel() {
@@ -975,6 +1075,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the frequency
+     *
+     * @return the refresh rate of the (full-screen) display (in Hertz)
      * @see #setFrequency(int)
      */
     public int getFrequency() {
@@ -983,6 +1085,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the number of depth bits
+     *
+     * @return the number of depth bits per rendered pixel
      * @see #setDepthBits(int)
      */
     public int getDepthBits() {
@@ -992,6 +1096,8 @@ public final class AppSettings extends HashMap<String, Object> {
     /**
      * Android Only
      * Get the number of alpha bits for the surface view to use.
+     *
+     * @return the number of alpha bits per rendered pixel
      * @see #setAlphaBits(int)
      */
     public int getAlphaBits() {
@@ -1000,6 +1106,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the number of stencil bits
+     *
+     * @return the number of stencil bits per rendered pixel
      * @see #setStencilBits(int)
      */
     public int getStencilBits() {
@@ -1008,6 +1116,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the number of samples
+     *
+     * @return the number of samples per pixel (for multisample anti-aliasing)
      * @see #setSamples(int)
      */
     public int getSamples() {
@@ -1016,6 +1126,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the application title
+     *
+     * @return the title text
      * @see #setTitle(java.lang.String)
      */
     public String getTitle() {
@@ -1023,7 +1135,9 @@ public final class AppSettings extends HashMap<String, Object> {
     }
 
     /**
-     * Get the vsync state
+     * Test whether vertical synchronization should be enabled.
+     *
+     * @return true for enabled, false for disabled
      * @see #setVSync(boolean)
      */
     public boolean isVSync() {
@@ -1032,6 +1146,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the fullscreen state
+     *
+     * @return true for fullscreen display, false for windowed display
      * @see #setFullscreen(boolean)
      */
     public boolean isFullscreen() {
@@ -1040,6 +1156,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the use joysticks state
+     *
+     * @return true to enable joystick input, false to disable it
      * @see #setUseJoysticks(boolean)
      */
     public boolean useJoysticks() {
@@ -1048,6 +1166,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the audio renderer
+     *
+     * @return the audio renderer's name, for example "LWJGL"
      * @see #setAudioRenderer(java.lang.String)
      */
     public String getAudioRenderer() {
@@ -1056,6 +1176,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the stereo 3D state
+     *
+     * @return true if 3-D stereo is enabled, otherwise false
      * @see #setStereo3D(boolean)
      */
     public boolean useStereo3D(){
@@ -1064,6 +1186,8 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the icon array
+     *
+     * @return the pre-existing array
      * @see #setIcons(java.lang.Object[])
      */
     public Object[] getIcons() {
@@ -1072,64 +1196,71 @@ public final class AppSettings extends HashMap<String, Object> {
 
     /**
      * Get the settings dialog image
+     *
+     * @return a path to the image asset
      * @see #setSettingsDialogImage(java.lang.String)
      */
     public String getSettingsDialogImage() {
         return getString("SettingsDialogImage");
     }
 
+    /**
+     * Test whether gamma correction should be enabled.
+     *
+     * @return true for enabled, false for disabled
+     */
     public boolean isGammaCorrection() {
         return getBoolean("GammaCorrection");
     }
-    
+
     /**
      * Allows the display window to be resized by dragging its edges.
-     * 
-     * Only supported for {@link JmeContext.Type#Display} contexts which 
-     * are in windowed mode, ignored for other types. 
+     *
+     * Only supported for {@link JmeContext.Type#Display} contexts which
+     * are in windowed mode, ignored for other types.
      * The default value is <code>false</code>.
-     * 
+     *
      * @param resizable True to make a resizable window, false to make a fixed
      * size window.
      */
     public void setResizable(boolean resizable) {
         putBoolean("Resizable", resizable);
     }
-    
+
     /**
      * Determine if the display window can be resized by dragging its edges.
-     * 
+     *
      * @return True if the window is resizable, false if it is fixed size.
-     * 
-     * @see #setResizable(boolean) 
+     *
+     * @see #setResizable(boolean)
      */
     public boolean isResizable() {
         return getBoolean("Resizable");
     }
-    
+
     /**
      * When enabled the display context will swap buffers every frame.
-     * 
+     *
      * This may need to be disabled when integrating with an external
      * library that handles buffer swapping on its own, e.g. Oculus Rift.
      * When disabled, the engine will process window messages
-     * after each frame but it will not swap buffers - note that this
+     * after each frame, but it will not swap buffers. Note that this
      * will cause 100% CPU usage normally as there's no VSync or any framerate
-     * caps (unless set via {@link #setFrameRate(int) }.
+     * caps (unless set via {@link #setFrameRate(int) }).
      * The default is <code>true</code>.
-     * 
+     *
      * @param swapBuffers True to enable buffer swapping, false to disable it.
      */
     public void setSwapBuffers(boolean swapBuffers) {
         putBoolean("SwapBuffers", swapBuffers);
     }
-   
+
     /**
      * Determine if the display context will swap buffers every frame.
-     * 
+     *
      * @return True if buffer swapping is enabled, false otherwise.
-     * 
-     * @see #setSwapBuffers(boolean) 
+     *
+     * @see #setSwapBuffers(boolean)
      */
     public boolean isSwapBuffers() {
         return getBoolean("SwapBuffers");
@@ -1138,7 +1269,7 @@ public final class AppSettings extends HashMap<String, Object> {
     /**
      * True to enable the creation of an OpenCL context.
      *
-     * @param support
+     * @param support whether to create the context or not
      */
     public void setOpenCLSupport(boolean support) {
         putBoolean("OpenCL", support);
@@ -1147,20 +1278,205 @@ public final class AppSettings extends HashMap<String, Object> {
     public boolean isOpenCLSupport() {
         return getBoolean("OpenCL");
     }
-    
+
     /**
      * Sets a custom platform chooser. This chooser specifies which platform and
      * which devices are used for the OpenCL context.
-     * 
+     *
      * Default: an implementation defined one.
-     * 
+     *
      * @param chooser the class of the chooser, must have a default constructor
      */
     public void setOpenCLPlatformChooser(Class<? extends PlatformChooser> chooser) {
         putString("OpenCLPlatformChooser", chooser.getName());
     }
-    
+
     public String getOpenCLPlatformChooser() {
         return getString("OpenCLPlatformChooser");
+    }
+
+    /**
+     * Determine if the renderer will be run in Graphics Debug mode, which means every openGL call is checked and
+     * if it returns an error code, throw a {@link com.jme3.renderer.RendererException}.<br>
+     * Without this, many openGL calls might fail without notice, so turning it on is recommended for development.
+     * Graphics Debug mode will also label native objects and group calls on supported renderers. Compatible
+     * graphics debuggers will be able to use this data to show a better outlook of your application
+     * 
+     * @return whether the context will be run in Graphics Debug Mode or not
+     * @see #setGraphicsDebug(boolean)
+     */
+    public boolean isGraphicsDebug() {
+        return getBoolean("GraphicsDebug");
+    }
+
+    /**
+     * Set whether the renderer will be run in Graphics Debug mode, which means every openGL call is checked and
+     * if it returns an error code, throw a {@link com.jme3.renderer.RendererException}.<br>
+     * Without this, many openGL calls might fail without notice, so turning it on is recommended for development.
+     * Graphics Debug mode will also label native objects and group calls on supported renderers. Compatible
+     * graphics debuggers will be able to use this data to show a better outlook of your application
+     *
+     * @param debug whether the context will be run in Graphics Debug Mode or not
+     * @see #isGraphicsDebug()
+     */
+    public void setGraphicsDebug(boolean debug) {
+        putBoolean("GraphicsDebug", debug);
+    }
+
+    /**
+     * Determine if the renderer will be run in Graphics Timing mode, which means every openGL call is checked and
+     * if it runs for longer than a millisecond, log it.<br>
+     * It also keeps track of the time spent in GL Calls in general and displays them when
+     * {@link com.jme3.renderer.opengl.GL#resetStats()} is called.
+     *
+     * @return whether the context will be run in Graphics Timing Mode or not
+     * @see #setGraphicsTiming(boolean)
+     * @see com.jme3.renderer.opengl.GLTiming
+     */
+    public boolean isGraphicsTiming() {
+        return getBoolean("GraphicsTiming");
+    }
+
+    /**
+     * Set whether the renderer will be run in Graphics Timing mode, which means every openGL call is checked and
+     * if it runs for longer than a millisecond, log it.<br>
+     * It also keeps track of the time spent in GL Calls in general and displays them when
+     * {@link com.jme3.renderer.opengl.GL#resetStats()} is called.
+     *
+     * @param timing whether the context will be run in Graphics Timing Mode or not
+     * @see #isGraphicsTiming()
+     * @see com.jme3.renderer.opengl.GLTiming
+     */
+    public void setGraphicsTiming(boolean timing) {
+        putBoolean("GraphicsTiming", timing);
+    }
+
+    /**
+     * Determine if the renderer will be run in Graphics Trace mode, which means every openGL call is logged so one
+     * can trace what openGL commands where executed in which order by the engine.
+     *
+     * @return whether the context will be run in Graphics Trace Mode or not
+     * @see #setGraphicsTrace(boolean)
+     * @see com.jme3.renderer.opengl.GLTracer
+     */
+    public boolean isGraphicsTrace() {
+        return getBoolean("GraphicsTrace");
+    }
+
+    /**
+     * Set whether the renderer will be run in Graphics Trace mode, which means every openGL call is logged so one
+     * can trace what openGL commands where executed in which order by the engine.
+     *
+     * @param trace whether the context will be run in Graphics Trace Mode or not
+     * @see #isGraphicsTrace()
+     * @see com.jme3.renderer.opengl.GLTracer
+     */
+    public void setGraphicsTrace(boolean trace) {
+        putBoolean("GraphicsTrace", trace);
+    }
+
+    /**
+     * Determine whether to use full resolution framebuffers on Retina displays.
+     *
+     * @return whether to use full resolution framebuffers on Retina displays.
+     */
+    public boolean isUseRetinaFrameBuffer() {
+        return getBoolean("UseRetinaFrameBuffer");
+    }
+
+    /**
+     * Specifies whether to use full resolution framebuffers on Retina displays. This is ignored on other platforms.
+     *
+     * @param useRetinaFrameBuffer whether to use full resolution framebuffers on Retina displays.
+     */
+    public void setUseRetinaFrameBuffer(boolean useRetinaFrameBuffer) {
+        putBoolean("UseRetinaFrameBuffer", useRetinaFrameBuffer);
+    }
+
+    /**
+     * Tests the state of the Center Window flag.
+     *
+     * <p>The Center Window flag is used only with LWJGL3 and has no effect on
+     * fullscreen windows.
+     *
+     * @return true to center the window on the desktop, false to position the
+     *    window at (WindowXPosition, WindowYPosition)
+     * @see #setCenterWindow(boolean)
+     */
+    public boolean getCenterWindow() {
+        return getBoolean("CenterWindow");
+    }
+
+    /**
+     * Enables or disables the Center Window flag.
+     *
+     * <p>The Center Window flag is used only with LWJGL3 and has no effect on
+     * fullscreen windows. It defaults to true.
+     *
+     * @param center true to center the window on the desktop, false to position
+     *     the window at (WindowXPosition, WindowYPosition)
+     */
+    public void setCenterWindow(boolean center) {
+        putBoolean("CenterWindow", center);
+    }
+
+    /**
+     * Gets the window's initial X position on the desktop.
+     *
+     * <p>This setting is used only with LWJGL3, has no effect on fullscreen
+     * windows, and is ignored if the Center Window flag is true.
+     *
+     * @return the initial position of the window's left edge relative to the
+     *     left edge of the desktop
+     * @see #setCenterWindow(boolean)
+     * @see #setWindowXPosition(int)
+     */
+    public int getWindowXPosition() {
+        return getInteger("WindowXPosition");
+    }
+
+    /**
+     * Sets the window's initial X position on the desktop.
+     *
+     * <p>This setting is used only with LWJGL3, has no effect on fullscreen
+     * windows, and is ignored if the Center Window flag is true. Its default
+     * value is 0.
+     *
+     * @param pos the desired initial position of the window's left edge
+     *     relative to the left edge of the desktop
+     * @see #setCenterWindow(boolean)
+     */
+    public void setWindowXPosition(int pos) {
+        putInteger("WindowXPosition", pos);
+    }
+
+    /**
+     * Gets the window's initial Y position on the desktop.
+     *
+     * <p>This setting is used only with LWJGL3, has no effect on fullscreen
+     * windows, and is ignored if the Center Window flag is true.
+     *
+     * @return the initial position of the window's upper edge relative to the
+     *     upper edge of the desktop
+     * @see #setCenterWindow(boolean)
+     * @see #setWindowYPosition(int)
+     */
+    public int getWindowYPosition() {
+        return getInteger("WindowYPosition");
+    }
+
+    /**
+     * Sets the window's initial Y position on the desktop.
+     *
+     * <p>This setting is used only with LWJGL3, has no effect on fullscreen
+     * windows, and is ignored if the Center Window flag is true. Its default
+     * value is 0.
+     *
+     * @param pos the desired initial position of the window's upper edge
+     *     relative to the upper edge of the desktop
+     * @see #setCenterWindow(boolean)
+     */
+    public void setWindowYPosition(int pos) {
+        putInteger("WindowYPosition", pos);
     }
 }

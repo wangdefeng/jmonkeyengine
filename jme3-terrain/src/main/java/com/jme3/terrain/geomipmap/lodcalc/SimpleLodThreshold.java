@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ import java.io.IOException;
  * @author bowens
  */
 public class SimpleLodThreshold implements LodThreshold {
-	
+
     private int size; // size of a terrain patch
     private float lodMultiplier = 2;
 
@@ -81,18 +81,20 @@ public class SimpleLodThreshold implements LodThreshold {
     public void setSize(int size) {
         this.size = size;
     }
-	
 
+    @Override
     public float getLodDistanceThreshold() {
         return size*lodMultiplier;
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule oc = ex.getCapsule(this);
         oc.write(size, "size", 16);
         oc.write(lodMultiplier, "lodMultiplier", 2);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule ic = im.getCapsule(this);
         size = ic.readInt("size", 16);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,7 @@ final class TextureUtil {
     private final GL2 gl2;
     private final GLExt glext;
     private GLImageFormat[][] formats;
+    private boolean supportUnpackRowLength;
     
     public TextureUtil(GL gl, GL2 gl2, GLExt glext) {
         this.gl = gl;
@@ -62,6 +63,7 @@ final class TextureUtil {
     }
     
     public void initialize(EnumSet<Caps> caps) {
+        supportUnpackRowLength = caps.contains(Caps.UnpackRowLength);
         this.formats = GLImageFormats.getFormatsForCaps(caps);
         if (logger.isLoggable(Level.FINE)) {
             StringBuilder sb = new StringBuilder();
@@ -89,12 +91,12 @@ final class TextureUtil {
     }
 
     public GLImageFormat getImageFormatWithError(Format fmt, boolean isSrgb) {
-        //if the passed format is one kind of depth there isno point in getting the srgb format;
+        //if the passed format is one kind of depth there is no point in getting the srgb format;
         isSrgb = isSrgb && !fmt.isDepthFormat();
         GLImageFormat glFmt = getImageFormat(fmt, isSrgb);
         if (glFmt == null && isSrgb) {
             glFmt = getImageFormat(fmt, false);               
-            logger.log(Level.WARNING, "No sRGB format available for ''{0}''. Failling back to linear.", fmt);
+            logger.log(Level.WARNING, "No sRGB format available for ''{0}''. Falling back to linear.", fmt);
         }
         if (glFmt == null) { 
             throw new RendererException("Image format '" + fmt + "' is unsupported by the video hardware.");
@@ -298,6 +300,10 @@ final class TextureUtil {
         }
     }
 
+    /**
+     * @deprecated Use uploadSubTexture(int target,  Image src, int index,int targetX, int targetY,int srcX,int srcY,  int areaWidth,int areaHeight, boolean linearizeSrgb) 
+     */
+    @Deprecated
     public void uploadSubTexture(Image image, int target, int index, int x, int y, boolean linearizeSrgb) {
         if (target != GL.GL_TEXTURE_2D || image.getDepth() > 1) {
             throw new UnsupportedOperationException("Updating non-2D texture is not supported");
@@ -338,4 +344,63 @@ final class TextureUtil {
         gl.glTexSubImage2D(target, 0, x, y, image.getWidth(), image.getHeight(), 
                            oglFormat.format, oglFormat.dataType, data);
     }
+
+    public void uploadSubTexture(int target, Image src, int index, int targetX, int targetY, int areaX, int areaY, int areaWidth, int areaHeight, boolean linearizeSrgb) {
+        if (target != GL.GL_TEXTURE_2D || src.getDepth() > 1) {
+            throw new UnsupportedOperationException("Updating non-2D texture is not supported");
+        }
+
+        if (src.getMipMapSizes() != null) {
+            throw new UnsupportedOperationException("Updating mip-mapped images is not supported");
+        }
+
+        if (src.getMultiSamples() > 1) {
+            throw new UnsupportedOperationException("Updating multisampled images is not supported");
+        }
+
+        Image.Format jmeFormat = src.getFormat();
+
+        if (jmeFormat.isCompressed()) {
+            throw new UnsupportedOperationException("Updating compressed images is not supported");
+        } else if (jmeFormat.isDepthFormat()) {
+            throw new UnsupportedOperationException("Updating depth images is not supported");
+        }
+
+        boolean getSrgbFormat = src.getColorSpace() == ColorSpace.sRGB && linearizeSrgb;
+        GLImageFormat oglFormat = getImageFormatWithError(jmeFormat, getSrgbFormat);
+
+        ByteBuffer data = src.getData(index);
+
+        if (data == null) {
+            throw new IndexOutOfBoundsException("The image index " + index + " is not valid for the given image");
+        }
+
+        int Bpp = src.getFormat().getBitsPerPixel() / 8;
+
+        int srcWidth = src.getWidth();
+        int cpos = data.position();
+        int skip = areaX;
+        skip += areaY * srcWidth;
+        skip *= Bpp;
+
+        data.position(skip);
+
+        boolean needsStride = srcWidth != areaWidth;
+
+        if (needsStride && (!supportUnpackRowLength)) { // doesn't support stride, copy row by row (slower).
+            for (int i = 0; i < areaHeight; i++) {
+                data.position(skip + (srcWidth * Bpp * i));
+                gl.glTexSubImage2D(target, 0, targetX, targetY + i, areaWidth, 1, oglFormat.format, oglFormat.dataType, data);
+            }
+        } else {
+            if (needsStride)
+                gl2.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, srcWidth);
+            gl.glTexSubImage2D(target, 0, targetX, targetY, areaWidth, areaHeight, oglFormat.format, oglFormat.dataType, data);
+            if (needsStride)
+                gl2.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0);
+        }
+        data.position(cpos);
+
+    }
+
 }

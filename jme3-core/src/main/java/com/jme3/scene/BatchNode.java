@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,11 +73,11 @@ public class BatchNode extends GeometryGroupNode {
     /**
      * the list of geometry holding the batched meshes
      */
-    protected SafeArrayList<Batch> batches = new SafeArrayList<Batch>(Batch.class);
+    protected SafeArrayList<Batch> batches = new SafeArrayList<>(Batch.class);
     /**
      * a map for storing the batches by geometry to quickly access the batch when updating
      */
-    protected Map<Geometry, Batch> batchesByGeom = new HashMap<Geometry, Batch>();
+    protected Map<Geometry, Batch> batchesByGeom = new HashMap<>();
     /**
      * used to store transformed vectors before proceeding to a bulk put into the FloatBuffer
      */
@@ -185,7 +185,7 @@ public class BatchNode extends GeometryGroupNode {
     }
 
     protected void doBatch() {
-        Map<Material, List<Geometry>> matMap = new HashMap<Material, List<Geometry>>();
+        Map<Material, List<Geometry>> matMap = new HashMap<>();
         int nbGeoms = 0;
 
         gatherGeometries(matMap, this, needsFullRebatch);
@@ -240,7 +240,9 @@ public class BatchNode extends GeometryGroupNode {
         }
 
 
-        logger.log(Level.FINE, "Batched {0} geometries in {1} batches.", new Object[]{nbGeoms, batches.size()});
+        if (logger.isLoggable(Level.FINE)) {
+            logger.log(Level.FINE, "Batched {0} geometries in {1} batches.", new Object[]{nbGeoms, batches.size()});
+        }
 
         //init the temp arrays if something has been batched only.
         if (matMap.size() > 0) {
@@ -254,7 +256,7 @@ public class BatchNode extends GeometryGroupNode {
         }
     }
 
-    //in case the detached spatial is a node, we unbatch all geometries in its subegraph
+    //in case the detached spatial is a node, we unbatch all geometries in its subgraph
     @Override
     public Spatial detachChildAt(int index) {
         Spatial s = super.detachChildAt(index);
@@ -341,8 +343,8 @@ public class BatchNode extends GeometryGroupNode {
     }
 
     /**
-     * Sets the material to the all the batches of this BatchNode
-     * use setMaterial(Material material,int batchIndex) to set a material to a specific batch
+     * Sets the material to the all the batches of this BatchNode.
+     * Use setMaterial(Material material,int batchIndex) to set a material to a specific batch.
      *
      * @param material the material to use for this geometry
      */
@@ -352,9 +354,9 @@ public class BatchNode extends GeometryGroupNode {
     }
 
     /**
-     * Returns the material that is used for the first batch of this BatchNode
+     * Returns the material that is used for the first batch of this BatchNode.
      * <p>
-     * use getMaterial(Material material,int batchIndex) to get a material from a specific batch
+     * Use getMaterial(Material material,int batchIndex) to get a material from a specific batch.
      *
      * @return the material that is used for the first batch of this BatchNode
      * @see #setMaterial(com.jme3.material.Material)
@@ -444,7 +446,7 @@ public class BatchNode extends GeometryGroupNode {
         outMesh.setMode(mode);
         //outMesh.setLineWidth(lineWidth);
         if (totalVerts >= 65536) {
-            // make sure we create an UnsignedInt buffer so we can fit all of the meshes
+            // Make sure we create an UnsignedInt buffer, so we can fit all of the meshes.
             formatForBuf[VertexBuffer.Type.Index.ordinal()] = VertexBuffer.Format.UnsignedInt;
         } else {
             formatForBuf[VertexBuffer.Type.Index.ordinal()] = VertexBuffer.Format.UnsignedShort;
@@ -688,7 +690,7 @@ public class BatchNode extends GeometryGroupNode {
                 }
             }
             clone.needsFullRebatch = true;
-            clone.batches = new SafeArrayList<Batch>(Batch.class);
+            clone.batches = new SafeArrayList<>(Batch.class);
             clone.batchesByGeom = new HashMap<Geometry, Batch>();
             clone.batch();
         }
@@ -708,7 +710,7 @@ public class BatchNode extends GeometryGroupNode {
         this.tmpFloatT = cloner.clone(tmpFloatT);
 
 
-        HashMap<Geometry, Batch> newBatchesByGeom = new HashMap<Geometry, Batch>();
+        HashMap<Geometry, Batch> newBatchesByGeom = new HashMap<>();
         for (Map.Entry<Geometry, Batch> e : batchesByGeom.entrySet()) {
             newBatchesByGeom.put(cloner.clone(e.getKey()), cloner.clone(e.getValue()));
         }

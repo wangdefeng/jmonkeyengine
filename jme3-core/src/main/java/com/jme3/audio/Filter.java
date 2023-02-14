@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,18 +39,20 @@ import java.io.IOException;
 
 public abstract class Filter extends NativeObject implements Savable {
 
-    public Filter(){
+    public Filter() {
         super();
     }
-    
-    protected Filter(int id){
+
+    protected Filter(int id) {
         super(id);
     }
-    
+
+    @Override
     public void write(JmeExporter ex) throws IOException {
         // nothing to save
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         // nothing to read
     }
@@ -63,7 +65,7 @@ public abstract class Filter extends NativeObject implements Savable {
 
     @Override
     public void deleteObject(Object rendererObject) {
-        ((AudioRenderer)rendererObject).deleteFilter(this);
+        ((AudioRenderer) rendererObject).deleteFilter(this);
     }
 
     @Override

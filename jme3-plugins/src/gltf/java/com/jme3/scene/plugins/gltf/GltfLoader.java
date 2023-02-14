@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2009-2022 jMonkeyEngine
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * * Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ * * Neither the name of 'jMonkeyEngine' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.jme3.scene.plugins.gltf;
 
 import com.google.gson.*;
@@ -12,18 +43,18 @@ import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.*;
 import com.jme3.scene.control.CameraControl;
 import com.jme3.scene.mesh.MorphTarget;
+import static com.jme3.scene.plugins.gltf.GltfUtils.*;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.IntMap;
 import com.jme3.util.mikktspace.MikktspaceTangentGenerator;
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static com.jme3.scene.plugins.gltf.GltfUtils.*;
 
 /**
  * GLTF 2.0 loader
@@ -33,8 +64,8 @@ public class GltfLoader implements AssetLoader {
 
     private static final Logger logger = Logger.getLogger(GltfLoader.class.getName());
 
-    //Data cache for already parsed JME objects
-    private Map<String, Object[]> dataCache = new HashMap<>();
+    // Data cache for already parsed JME objects
+    private final Map<String, Object[]> dataCache = new HashMap<>();
     private JsonArray scenes;
     private JsonArray nodes;
     private JsonArray meshes;
@@ -54,22 +85,18 @@ public class GltfLoader implements AssetLoader {
     private JsonObject docRoot;
     private Node rootNode;
 
-    private FloatArrayPopulator floatArrayPopulator = new FloatArrayPopulator();
-    private Vector3fArrayPopulator vector3fArrayPopulator = new Vector3fArrayPopulator();
-    private QuaternionArrayPopulator quaternionArrayPopulator = new QuaternionArrayPopulator();
-    private Matrix4fArrayPopulator matrix4fArrayPopulator = new Matrix4fArrayPopulator();
-    private static Map<String, MaterialAdapter> defaultMaterialAdapters = new HashMap<>();
-    private CustomContentManager customContentManager = new CustomContentManager();
+    private final FloatArrayPopulator floatArrayPopulator = new FloatArrayPopulator();
+    private final Vector3fArrayPopulator vector3fArrayPopulator = new Vector3fArrayPopulator();
+    private final QuaternionArrayPopulator quaternionArrayPopulator = new QuaternionArrayPopulator();
+    private final Matrix4fArrayPopulator matrix4fArrayPopulator = new Matrix4fArrayPopulator();
+    private final Map<String, MaterialAdapter> defaultMaterialAdapters = new HashMap<>();
+    private final CustomContentManager customContentManager = new CustomContentManager();
     private boolean useNormalsFlag = false;
-    private Quaternion tmpQuat = new Quaternion();
-    private Transform tmpTransforms = new Transform();
-    private Transform tmpTransforms2 = new Transform();
-    private Matrix4f tmpMat = new Matrix4f();
 
     Map<SkinData, List<Spatial>> skinnedSpatials = new HashMap<>();
     IntMap<SkinBuffers> skinBuffers = new IntMap<>();
 
-    static {
+    public GltfLoader() {
         defaultMaterialAdapters.put("pbrMetallicRoughness", new PBRMetalRoughMaterialAdapter());
     }
 
@@ -77,7 +104,6 @@ public class GltfLoader implements AssetLoader {
     public Object load(AssetInfo assetInfo) throws IOException {
         return loadFromStream(assetInfo, assetInfo.openStream());
     }
-
 
     protected Object loadFromStream(AssetInfo assetInfo, InputStream stream) throws IOException {
         try {
@@ -93,14 +119,14 @@ public class GltfLoader implements AssetLoader {
                 defaultMat.setFloat("Roughness", 1f);
             }
 
-            docRoot = new JsonParser().parse(new JsonReader(new InputStreamReader(stream))).getAsJsonObject();
+            docRoot = JsonParser.parseReader(new JsonReader(new InputStreamReader(stream))).getAsJsonObject();
 
             JsonObject asset = docRoot.getAsJsonObject().get("asset").getAsJsonObject();
-            String generator = getAsString(asset, "generator");
+            getAsString(asset, "generator");
             String version = getAsString(asset, "version");
             String minVersion = getAsString(asset, "minVersion");
             if (!isSupported(version, minVersion)) {
-                logger.log(Level.SEVERE, "Gltf Loader doesn't support this gltf version: " + version + (minVersion != null ? ("/" + minVersion) : ""));
+                logger.log(Level.SEVERE, "Gltf Loader doesn''t support this gltf version: {0}{1}", new Object[]{version, minVersion != null ? ("/" + minVersion) : ""});
             }
 
             scenes = docRoot.getAsJsonArray("scenes");
@@ -128,7 +154,7 @@ public class GltfLoader implements AssetLoader {
 
             rootNode = customContentManager.readExtensionAndExtras("root", docRoot, rootNode);
 
-            //Loading animations
+            // Loading animations
             if (animations != null) {
                 for (int i = 0; i < animations.size(); i++) {
                     readAnimation(i);
@@ -137,11 +163,14 @@ public class GltfLoader implements AssetLoader {
 
             setupControls();
 
-            //only one scene let's not return the root.
+            // only one scene let's not return the root.
             if (rootNode.getChildren().size() == 1) {
-                rootNode = (Node) rootNode.getChild(0);
+                Node child = (Node) rootNode.getChild(0);
+                // Migrate lights that were in the parent to the child.
+                rootNode.getLocalLightList().forEach(child::addLight);
+                rootNode = child;
             }
-            //no name for the scene... let's set the file name.
+            // no name for the scene... let's set the file name.
             if (rootNode.getName() == null) {
                 rootNode.setName(assetInfo.getKey().getName());
             }
@@ -165,27 +194,30 @@ public class GltfLoader implements AssetLoader {
 
     public void readScenes(JsonPrimitive defaultScene, Node rootNode) throws IOException {
         if (scenes == null) {
-            //no scene... lets handle this later...
+            // no scene... lets handle this later...
             throw new AssetLoadException("Gltf files with no scene is not yet supported");
         }
 
         for (JsonElement scene : scenes) {
             Node sceneNode = new Node();
-            //specs says that only the default scene should be rendered,
-            // if there are several scenes, they are attached to the rootScene, but they are culled
+            // Specs say that only the default scene should be rendered.
+            // If there are several scenes, they are attached to the rootScene, but they are culled.
             sceneNode.setCullHint(Spatial.CullHint.Always);
 
             sceneNode.setName(getAsString(scene.getAsJsonObject(), "name"));
+            // If the scene is empty, ignore it.
+            if (!scene.getAsJsonObject().has("nodes")) {
+                continue;
+            }
             JsonArray sceneNodes = scene.getAsJsonObject().getAsJsonArray("nodes");
             sceneNode = customContentManager.readExtensionAndExtras("scene", scene, sceneNode);
             rootNode.attachChild(sceneNode);
             for (JsonElement node : sceneNodes) {
                 readChild(sceneNode, node);
             }
-
         }
 
-        //Setting the default scene cul hint to inherit.
+        // Setting the default scene cul hint to inherit.
         int activeChild = 0;
         if (defaultScene != null) {
             activeChild = defaultScene.getAsInt();
@@ -197,10 +229,10 @@ public class GltfLoader implements AssetLoader {
         Object obj = fetchFromCache("nodes", nodeIndex, Object.class);
         if (obj != null) {
             if (obj instanceof JointWrapper) {
-                //the node can be a previously loaded bone let's return it
+                // the node can be a previously loaded bone let's return it
                 return obj;
             } else {
-                //If a spatial is referenced several times, it may be attached to different parents,
+                // If a spatial is referenced several times, it may be attached to different parents,
                 // and it's not possible in JME, so we have to clone it.
                 return ((Spatial) obj).clone();
             }
@@ -212,14 +244,15 @@ public class GltfLoader implements AssetLoader {
         if (meshIndex != null) {
             assertNotNull(meshes, "Can't find any mesh data, yet a node references a mesh");
 
-            //there is a mesh in this node, however gltf can split meshes in primitives (some kind of sub meshes),
-            //We don't have this in JME so we have to make one mesh and one Geometry for each primitive.
+            // there is a mesh in this node, however gltf
+            // can split meshes in primitives (some kind of sub meshes),
+            // We don't have this in JME, so we have to make one Mesh and one Geometry for each primitive.
             Geometry[] primitives = readMeshPrimitives(meshIndex);
             if (primitives.length == 1 && children == null) {
-                //only one geometry, let's not wrap it in another node unless the node has children.
+                // only one geometry, let's not wrap it in another node unless the node has children.
                 spatial = primitives[0];
             } else {
-                //several geometries, let's make a parent Node and attach them to it
+                // several geometries, let's make a parent Node and attach them to it
                 Node node = new Node();
                 for (Geometry primitive : primitives) {
                     node.attachChild(primitive);
@@ -229,7 +262,7 @@ public class GltfLoader implements AssetLoader {
             spatial.setName(readMeshName(meshIndex));
 
         } else {
-            //no mesh, we have a node. Can be a camera node or a regular node.
+            // no mesh, we have a node. Can be a camera node or a regular node.
             Integer camIndex = getAsInteger(nodeData, "camera");
             if (camIndex != null) {
                 Camera cam = fetchFromCache("cameras", camIndex, Camera.class);
@@ -277,7 +310,7 @@ public class GltfLoader implements AssetLoader {
                 }
             }
         } else if (loaded instanceof JointWrapper) {
-            //parent is the Armature Node, we have to apply its transforms to the root bone's animation data
+            // parent is the Armature Node, we have to apply its transforms to the root bone's animation data
             JointWrapper bw = (JointWrapper) loaded;
             bw.isRoot = true;
             SkinData skinData = fetchFromCache("skins", bw.skinIndex, SkinData.class);
@@ -286,24 +319,23 @@ public class GltfLoader implements AssetLoader {
             }
             skinData.parent = parent;
         }
-
     }
 
     public Transform readTransforms(JsonObject nodeData) {
         Transform transform = new Transform();
         JsonArray matrix = nodeData.getAsJsonArray("matrix");
         if (matrix != null) {
-            //transforms are given as a mat4
+            // transforms are given as a mat4
             float[] tmpArray = new float[16];
             for (int i = 0; i < tmpArray.length; i++) {
                 tmpArray[i] = matrix.get(i).getAsFloat();
             }
-            //creates a row major matrix from color major data
+            // creates a row major matrix from color major data
             Matrix4f mat = new Matrix4f(tmpArray);
             transform.fromTransformMatrix(mat);
             return transform;
         }
-        //no matrix transforms: no transforms or transforms givens as translation/rotation/scale
+        // no matrix transforms: no transforms or transforms givens as translation/rotation/scale
         JsonArray translation = nodeData.getAsJsonArray("translation");
         if (translation != null) {
             transform.setTranslation(
@@ -333,7 +365,7 @@ public class GltfLoader implements AssetLoader {
     public Geometry[] readMeshPrimitives(int meshIndex) throws IOException {
         Geometry[] geomArray = (Geometry[]) fetchFromCache("meshes", meshIndex, Object.class);
         if (geomArray != null) {
-            //cloning the geoms.
+            // cloning the geoms.
             Geometry[] geoms = new Geometry[geomArray.length];
             for (int i = 0; i < geoms.length; i++) {
                 geoms[i] = geomArray[i].clone(false);
@@ -343,7 +375,6 @@ public class GltfLoader implements AssetLoader {
         JsonObject meshData = meshes.get(meshIndex).getAsJsonObject();
         JsonArray primitives = meshData.getAsJsonArray("primitives");
         assertNotNull(primitives, "Can't find any primitives in mesh " + meshIndex);
-
         String name = getAsString(meshData, "name");
 
         geomArray = new Geometry[primitives.size()];
@@ -351,6 +382,7 @@ public class GltfLoader implements AssetLoader {
         for (JsonElement primitive : primitives) {
             JsonObject meshObject = primitive.getAsJsonObject();
             Mesh mesh = new Mesh();
+            addToCache("mesh", 0, mesh, 1);
             Integer mode = getAsInteger(meshObject, "mode");
             mesh.setMode(getMeshMode(mode));
             Integer indices = getAsInteger(meshObject, "indices");
@@ -363,19 +395,22 @@ public class GltfLoader implements AssetLoader {
             skinBuffers.clear();
 
             for (Map.Entry<String, JsonElement> entry : attributes.entrySet()) {
-                //special case for joints and weights buffer. If there are more than 4 bones per vertex, there might be several of them
-                //we need to read them all and to keep only the 4 that have the most weight on the vertex.
+                // special case for joints and weights buffer.
+                // If there are more than 4 bones per vertex, there might be several of them
+                // we need to read them all and to keep only the 4 that have the most weight on the vertex.
                 String bufferType = entry.getKey();
                 if (bufferType.startsWith("JOINTS")) {
                     SkinBuffers buffs = getSkinBuffers(bufferType);
-                    SkinBuffers buffer = readAccessorData(entry.getValue().getAsInt(), new JointArrayPopulator());
+                    SkinBuffers buffer
+                            = readAccessorData(entry.getValue().getAsInt(), new JointArrayPopulator());
                     buffs.joints = buffer.joints;
                     buffs.componentSize = buffer.componentSize;
                 } else if (bufferType.startsWith("WEIGHTS")) {
                     SkinBuffers buffs = getSkinBuffers(bufferType);
                     buffs.weights = readAccessorData(entry.getValue().getAsInt(), new FloatArrayPopulator());
                 } else {
-                    VertexBuffer vb = readAccessorData(entry.getValue().getAsInt(), new VertexBufferPopulator(getVertexBufferType(bufferType)));
+                    VertexBuffer vb = readAccessorData(entry.getValue().getAsInt(),
+                            new VertexBufferPopulator(getVertexBufferType(bufferType)));
                     if (vb != null) {
                         mesh.setBuffer(vb);
                     }
@@ -384,12 +419,12 @@ public class GltfLoader implements AssetLoader {
             handleSkinningBuffers(mesh, skinBuffers);
 
             if (mesh.getBuffer(VertexBuffer.Type.BoneIndex) != null) {
-                //the mesh has some skinning let's create needed buffers for HW skinning
-                //creating empty buffers for HW skinning
-                //the buffers will be setup if ever used.
+                // the mesh has some skinning let's create needed buffers for HW skinning
+                // creating empty buffers for HW skinning
+                // the buffers will be setup if ever used.
                 VertexBuffer weightsHW = new VertexBuffer(VertexBuffer.Type.HWBoneWeight);
                 VertexBuffer indicesHW = new VertexBuffer(VertexBuffer.Type.HWBoneIndex);
-                //setting usage to cpuOnly so that the buffer is not sent empty to the GPU
+                // setting usage to cpuOnly so that the buffer is not sent empty to the GPU
                 indicesHW.setUsage(VertexBuffer.Usage.CpuOnly);
                 weightsHW.setUsage(VertexBuffer.Usage.CpuOnly);
                 mesh.setBuffer(weightsHW);
@@ -397,7 +432,7 @@ public class GltfLoader implements AssetLoader {
                 mesh.generateBindPose();
             }
 
-            //Read morph target names
+            // Read morph target names
             LinkedList<String> targetNames = new LinkedList<>();
             if (meshData.has("extras") && meshData.getAsJsonObject("extras").has("targetNames")) {
                 JsonArray targetNamesJson = meshData.getAsJsonObject("extras").getAsJsonArray("targetNames");
@@ -405,10 +440,10 @@ public class GltfLoader implements AssetLoader {
                     targetNames.add(target.getAsString());
                 }
             }
-            
-            //Read morph targets
+
+            // Read morph targets
             JsonArray targets = meshObject.getAsJsonArray("targets");
-            if(targets != null){
+            if (targets != null) {
                 for (JsonElement target : targets) {
                     MorphTarget morphTarget = new MorphTarget();
                     if (targetNames.size() > 0) {
@@ -417,18 +452,18 @@ public class GltfLoader implements AssetLoader {
                     for (Map.Entry<String, JsonElement> entry : target.getAsJsonObject().entrySet()) {
                         String bufferType = entry.getKey();
                         VertexBuffer.Type type = getVertexBufferType(bufferType);
-                        VertexBuffer vb = readAccessorData(entry.getValue().getAsInt(), new VertexBufferPopulator(type));
+                        VertexBuffer vb = readAccessorData(entry.getValue().getAsInt(),
+                                new VertexBufferPopulator(type));
                         if (vb != null) {
-                            morphTarget.setBuffer(type, (FloatBuffer)vb.getData());
+                            morphTarget.setBuffer(type, (FloatBuffer) vb.getData());
                         }
                     }
                     mesh.addMorphTarget(morphTarget);
                 }
             }
-        
-            //Read mesh extras
-            mesh = customContentManager.readExtensionAndExtras("primitive", meshObject, mesh);
 
+            // Read mesh extras
+            mesh = customContentManager.readExtensionAndExtras("primitive", meshObject, mesh);
             Geometry geom = new Geometry(null, mesh);
 
             Integer materialIndex = getAsInteger(meshObject, "material");
@@ -437,12 +472,13 @@ public class GltfLoader implements AssetLoader {
             } else {
                 useNormalsFlag = false;
                 geom.setMaterial(readMaterial(materialIndex));
-                if (geom.getMaterial().getAdditionalRenderState().getBlendMode() == RenderState.BlendMode.Alpha) {
-                    //Alpha blending is on on this material let's place the geom in the transparent bucket
+                if (geom.getMaterial().getAdditionalRenderState().getBlendMode()
+                        == RenderState.BlendMode.Alpha) {
+                    // Alpha blending is enabled for this material. Let's place the geom in the transparent bucket.
                     geom.setQueueBucket(RenderQueue.Bucket.Transparent);
                 }
                 if (useNormalsFlag && mesh.getBuffer(VertexBuffer.Type.Tangent) == null) {
-                    //No tangent buffer, but there is a normal map, we have to generate them using MiiktSpace
+                    // No tangent buffer, but there is a normal map, we have to generate them using MiiktSpace
                     MikktspaceTangentGenerator.generate(geom);
                 }
             }
@@ -454,7 +490,6 @@ public class GltfLoader implements AssetLoader {
             geom.updateModelBound();
             geomArray[index] = geom;
             index++;
-
         }
 
         geomArray = customContentManager.readExtensionAndExtras("mesh", meshData, geomArray);
@@ -462,7 +497,6 @@ public class GltfLoader implements AssetLoader {
         addToCache("meshes", meshIndex, geomArray, meshes.size());
         return geomArray;
     }
-
 
     private SkinBuffers getSkinBuffers(String bufferType) {
         int bufIndex = getIndex(bufferType);
@@ -474,8 +508,7 @@ public class GltfLoader implements AssetLoader {
         return buffs;
     }
 
-    public <R> R readAccessorData(int accessorIndex, Populator<R> populator) throws IOException {
-
+    private <R> R readAccessorData(int accessorIndex, Populator<R> populator) throws IOException {
         assertNotNull(accessors, "No accessor attribute in the gltf file");
 
         JsonObject accessor = accessors.get(accessorIndex).getAsJsonObject();
@@ -490,16 +523,16 @@ public class GltfLoader implements AssetLoader {
 
         boolean normalized = getAsBoolean(accessor, "normalized", false);
 
-        //TODO min / max...don't know what to do about them.
-        //TODO sparse
+        // TODO min / max...don't know what to do about them.
+        // TODO sparse
 
         R data = populator.populate(bufferViewIndex, componentType, type, count, byteOffset, normalized);
         data = customContentManager.readExtensionAndExtras("accessor", accessor, data);
         return data;
     }
 
-    public Object readBuffer(Integer bufferViewIndex, int byteOffset, int count, Object store, int numComponents, VertexBuffer.Format format) throws IOException {
-
+    public Object readBuffer(Integer bufferViewIndex, int byteOffset, int count, Object store,
+            int numComponents, VertexBuffer.Format format) throws IOException {
         JsonObject bufferView = bufferViews.get(bufferViewIndex).getAsJsonObject();
         Integer bufferIndex = getAsInteger(bufferView, "buffer");
         assertNotNull(bufferIndex, "No buffer defined for bufferView " + bufferViewIndex);
@@ -508,12 +541,12 @@ public class GltfLoader implements AssetLoader {
         assertNotNull(byteLength, "No byte length defined for bufferView " + bufferViewIndex);
         int byteStride = getAsInteger(bufferView, "byteStride", 0);
 
-        //target defines ELEMENT_ARRAY_BUFFER or ARRAY_BUFFER, but we already know that since we know we load the indexbuffer or any other...
-        //not sure it's useful for us, but I guess it's useful when you map data directly to the GPU.
-        //int target = getAsInteger(bufferView, "target", 0);
+        // target defines ELEMENT_ARRAY_BUFFER or ARRAY_BUFFER,
+        // but we already know that since we know we load the index buffer or any other...
+        // Not sure it's useful for us, but I guess it's useful when you map data directly to the GPU.
+        // int target = getAsInteger(bufferView, "target", 0);
 
         byte[] data = readData(bufferIndex);
-
         data = customContentManager.readExtensionAndExtras("bufferView", bufferView, data);
 
         if (store == null) {
@@ -530,7 +563,6 @@ public class GltfLoader implements AssetLoader {
     }
 
     public byte[] readData(int bufferIndex) throws IOException {
-
         assertNotNull(buffers, "No buffer defined");
 
         JsonObject buffer = buffers.get(bufferIndex).getAsJsonObject();
@@ -547,22 +579,23 @@ public class GltfLoader implements AssetLoader {
 
         addToCache("buffers", bufferIndex, data, buffers.size());
         return data;
-
     }
 
     protected byte[] getBytes(int bufferIndex, String uri, Integer bufferLength) throws IOException {
         byte[] data;
         if (uri != null) {
             if (uri.startsWith("data:")) {
-                //base 64 embed data
+                // base 64 embed data
                 data = Base64.getDecoder().decode(uri.substring(uri.indexOf(",") + 1));
             } else {
-                //external file let's load it
-                if (!uri.endsWith(".bin")) {
-                    throw new AssetLoadException("Cannot load " + uri + ", a .bin extension is required.");
+                // external file let's load it
+                String decoded = decodeUri(uri);
+                if (!decoded.endsWith(".bin")) {
+                    throw new AssetLoadException(
+                            "Cannot load " + decoded + ", a .bin extension is required.");
                 }
 
-                BinDataKey key = new BinDataKey(info.getKey().getFolder() + uri);
+                BinDataKey key = new BinDataKey(info.getKey().getFolder() + decoded);
                 InputStream input = (InputStream) info.getManager().loadAsset(key);
                 data = new byte[bufferLength];
                 DataInputStream dataStream = new DataInputStream(input);
@@ -570,7 +603,7 @@ public class GltfLoader implements AssetLoader {
                 dataStream.close();
             }
         } else {
-            //no URI this should not happen in a gltf file, only in glb files.
+            // no URI this should not happen in a gltf file, only in glb files.
             throw new AssetLoadException("Buffer " + bufferIndex + " has no uri");
         }
         return data;
@@ -581,7 +614,6 @@ public class GltfLoader implements AssetLoader {
 
         JsonObject matData = materials.get(materialIndex).getAsJsonObject();
         JsonObject pbrMat = matData.getAsJsonObject("pbrMetallicRoughness");
-
 
         MaterialAdapter adapter = null;
 
@@ -596,18 +628,23 @@ public class GltfLoader implements AssetLoader {
         adapter = customContentManager.readExtensionAndExtras("material", matData, adapter);
 
         if (adapter == null) {
-            logger.log(Level.WARNING, "Couldn't find any matching material definition for material " + materialIndex);
+            logger.log(Level.WARNING,
+                    "Couldn't find any matching material definition for material " + materialIndex);
             adapter = defaultMaterialAdapters.get("pbrMetallicRoughness");
             adapter.init(info.getManager());
             setDefaultParams(adapter.getMaterial());
         }
 
+        Integer metallicRoughnessIndex = null;
         if (pbrMat != null) {
             adapter.setParam("baseColorFactor", getAsColor(pbrMat, "baseColorFactor", ColorRGBA.White));
             adapter.setParam("metallicFactor", getAsFloat(pbrMat, "metallicFactor", 1f));
             adapter.setParam("roughnessFactor", getAsFloat(pbrMat, "roughnessFactor", 1f));
             adapter.setParam("baseColorTexture", readTexture(pbrMat.getAsJsonObject("baseColorTexture")));
-            adapter.setParam("metallicRoughnessTexture", readTexture(pbrMat.getAsJsonObject("metallicRoughnessTexture")));
+            adapter.setParam("metallicRoughnessTexture",
+                    readTexture(pbrMat.getAsJsonObject("metallicRoughnessTexture")));
+            JsonObject metallicRoughnessJson = pbrMat.getAsJsonObject("metallicRoughnessTexture");
+            metallicRoughnessIndex = metallicRoughnessJson != null ? getAsInteger(metallicRoughnessJson, "index") : null;            
         }
 
         adapter.getMaterial().setName(getAsString(matData, "name"));
@@ -623,9 +660,14 @@ public class GltfLoader implements AssetLoader {
         if (normal != null) {
             useNormalsFlag = true;
         }
-        adapter.setParam("occlusionTexture", readTexture(matData.getAsJsonObject("occlusionTexture")));
+        JsonObject occlusionJson = matData.getAsJsonObject("occlusionTexture");
+        Integer occlusionIndex = occlusionJson != null ? getAsInteger(occlusionJson, "index") : null;
+        if (occlusionIndex != null && occlusionIndex.equals(metallicRoughnessIndex)) {
+            adapter.getMaterial().setBoolean("AoPackedInMRMap", true);
+        } else {        
+            adapter.setParam("occlusionTexture", readTexture(matData.getAsJsonObject("occlusionTexture")));
+        }
         adapter.setParam("emissiveTexture", readTexture(matData.getAsJsonObject("emissiveTexture")));
-
 
         return adapter.getMaterial();
     }
@@ -635,9 +677,8 @@ public class GltfLoader implements AssetLoader {
             return;
         }
         for (int i = 0; i < cameras.size(); i++) {
-
-            //Can't access resolution here... actually it's a shame we can't access settings from anywhere.
-            //users will have to call resize on the camera.
+            // Can't access resolution here... actually it's a shame we can't access settings from anywhere.
+            // users will have to call resize on the camera.
             Camera cam = new Camera(1, 1);
 
             JsonObject camObj = cameras.get(i).getAsJsonObject();
@@ -648,11 +689,11 @@ public class GltfLoader implements AssetLoader {
                 float aspectRatio = getAsFloat(camData, "aspectRation", 1f);
                 Float yfov = getAsFloat(camData, "yfov");
                 assertNotNull(yfov, "No yfov for perspective camera");
-                Float znear = getAsFloat(camData, "znear");
-                assertNotNull(znear, "No znear for perspective camere");
-                Float zfar = getAsFloat(camData, "zfar", znear * 1000f);
+                Float zNear = getAsFloat(camData, "znear");
+                assertNotNull(zNear, "No znear for perspective camera");
+                Float zFar = getAsFloat(camData, "zfar", zNear * 1000f);
 
-                cam.setFrustumPerspective(yfov * FastMath.RAD_TO_DEG, aspectRatio, znear, zfar);
+                cam.setFrustumPerspective(yfov * FastMath.RAD_TO_DEG, aspectRatio, zNear, zFar);
                 cam = customContentManager.readExtensionAndExtras("camera.perspective", camData, cam);
 
             } else {
@@ -660,13 +701,13 @@ public class GltfLoader implements AssetLoader {
                 assertNotNull(xmag, "No xmag for orthographic camera");
                 Float ymag = getAsFloat(camData, "ymag");
                 assertNotNull(ymag, "No ymag for orthographic camera");
-                Float znear = getAsFloat(camData, "znear");
-                assertNotNull(znear, "No znear for orthographic camere");
-                Float zfar = getAsFloat(camData, "zfar", znear * 1000f);
-                assertNotNull(zfar, "No zfar for orthographic camera");
+                Float zNear = getAsFloat(camData, "znear");
+                assertNotNull(zNear, "No znear for orthographic camera");
+                Float zFar = getAsFloat(camData, "zfar", zNear * 1000f);
+                assertNotNull(zFar, "No zfar for orthographic camera");
 
                 cam.setParallelProjection(true);
-                cam.setFrustum(znear, zfar, -xmag, xmag, ymag, -ymag);
+                cam.setFrustum(zNear, zFar, -xmag, xmag, ymag, -ymag);
 
                 cam = customContentManager.readExtensionAndExtras("camera.orthographic", camData, cam);
             }
@@ -677,7 +718,6 @@ public class GltfLoader implements AssetLoader {
 
     public Texture2D readTexture(JsonObject texture) throws IOException {
         return readTexture(texture, false);
-
     }
 
     public Texture2D readTexture(JsonObject texture, boolean flip) throws IOException {
@@ -724,7 +764,7 @@ public class GltfLoader implements AssetLoader {
             result = (Texture2D) info.getManager().loadAssetFromStream(key, new ByteArrayInputStream(data));
 
         } else if (uri.startsWith("data:")) {
-            //base64 encoded image
+            // base64 encoded image
             String[] uriInfo = uri.split(",");
             byte[] data = Base64.getDecoder().decode(uriInfo[1]);
             String headerInfo = uriInfo[0].split(";")[0];
@@ -732,8 +772,9 @@ public class GltfLoader implements AssetLoader {
             TextureKey key = new TextureKey("image" + sourceIndex + "." + extension, flip);
             result = (Texture2D) info.getManager().loadAssetFromStream(key, new ByteArrayInputStream(data));
         } else {
-            //external file image
-            TextureKey key = new TextureKey(info.getKey().getFolder() + uri, flip);
+            // external file image
+            String decoded = decodeUri(uri);
+            TextureKey key = new TextureKey(info.getKey().getFolder() + decoded, flip);
             Texture tex = info.getManager().loadTexture(key);
             result = (Texture2D) tex;
         }
@@ -748,25 +789,25 @@ public class GltfLoader implements AssetLoader {
         assertNotNull(channels, "No channels for animation " + name);
         assertNotNull(samplers, "No samplers for animation " + name);
 
-        //temp data storage of track data
+        // temp data storage of track data
         TrackData[] tracks = new TrackData[nodes.size()];
         boolean hasMorphTrack = false;
 
         for (JsonElement channel : channels) {
-
             JsonObject target = channel.getAsJsonObject().getAsJsonObject("target");
 
             Integer targetNode = getAsInteger(target, "node");
             String targetPath = getAsString(target, "path");
             if (targetNode == null) {
-                //no target node for the channel, specs say to ignore the channel.
+                // no target node for the channel, specs say to ignore the channel.
                 continue;
             }
             assertNotNull(targetPath, "No target path for channel");
 //
 //            if (targetPath.equals("weights")) {
-//                //Morph animation, not implemented in JME, let's warn the user and skip the channel
-//                logger.log(Level.WARNING, "Morph animation is not supported by JME yet, skipping animation track");
+//                // Morph animation, not implemented in JME, let's warn the user and skip the channel
+//                logger.log(Level.WARNING,
+//                    "Morph animation is not supported by JME yet, skipping animation track");
 //                continue;
 //            }
 
@@ -786,8 +827,9 @@ public class GltfLoader implements AssetLoader {
 
             String interpolation = getAsString(sampler, "interpolation");
             if (interpolation == null || !interpolation.equals("LINEAR")) {
-                //JME anim system only supports Linear interpolation (will be possible with monkanim though)
-                //TODO rework this once monkanim is core, or allow a hook for animation loading to fit custom animation systems
+                // JME anim system only supports Linear interpolation (will be possible with monkanim though)
+                // TODO rework this once monkanim is core,
+                // or allow a hook for animation loading to fit custom animation systems
                 logger.log(Level.WARNING, "JME only supports linear interpolation for animations");
             }
 
@@ -840,12 +882,14 @@ public class GltfLoader implements AssetLoader {
             if (node instanceof Spatial) {
                 Spatial s = (Spatial) node;
                 spatials.add(s);
-                if (trackData.rotations != null || trackData.translations != null || trackData.scales != null) {
-                    TransformTrack track = new TransformTrack(s, trackData.times, trackData.translations, trackData.rotations, trackData.scales);
+                if (trackData.rotations != null || trackData.translations != null
+                        || trackData.scales != null) {
+                    TransformTrack track = new TransformTrack(s, trackData.times,
+                            trackData.translations, trackData.rotations, trackData.scales);
                     aTracks.add(track);
                 }
-                if( trackData.weights != null && s instanceof Geometry){
-                    Geometry g = (Geometry)s;
+                if (trackData.weights != null && s instanceof Geometry) {
+                    Geometry g = (Geometry) s;
                     int nbMorph = g.getMesh().getMorphTargets().length;
 //                    for (int k = 0; k < trackData.weights.length; k++) {
 //                        System.err.print(trackData.weights[k] + ",");
@@ -863,26 +907,32 @@ public class GltfLoader implements AssetLoader {
                 if (skinIndex == -1) {
                     skinIndex = jw.skinIndex;
                 } else {
-                    //Check if all joints affected by this animation are from the same skin, the track will be skipped.
+                    // Check if all joints affected by this animation are from the same skin,
+                    // the track will be skipped.
                     if (skinIndex != jw.skinIndex) {
-                        logger.log(Level.WARNING, "Animation " + animationIndex + " (" + name + ") applies to joints that are not from the same skin: skin " + skinIndex + ", joint " + jw.joint.getName() + " from skin " + jw.skinIndex);
+                        logger.log(Level.WARNING, "Animation " + animationIndex + " (" + name
+                                + ") applies to joints that are not from the same skin: skin "
+                                + skinIndex + ", joint " + jw.joint.getName()
+                                + " from skin " + jw.skinIndex);
                         continue;
                     }
                 }
 
-                TransformTrack track = new TransformTrack(jw.joint, trackData.times, trackData.translations, trackData.rotations, trackData.scales);
+                TransformTrack track = new TransformTrack(jw.joint, trackData.times,
+                        trackData.translations, trackData.rotations, trackData.scales);
                 aTracks.add(track);
             }
         }
 
         // Check each bone to see if their local pose is different from their bind pose.
-        // If it is, we ensure that the bone has an animation track, else JME way of applying anim transforms will apply the bind pose to those bones,
+        // If it is, we ensure that the bone has an animation track,
+        // else JME way of applying anim transforms will apply the bind pose to those bones,
         // instead of the local pose that is supposed to be the default
         if (skinIndex != -1) {
             SkinData skin = fetchFromCache("skins", skinIndex, SkinData.class);
             for (Joint joint : skin.joints) {
                 if (!usedJoints.contains(joint)) {
-                    //create a track
+                    // create a track
                     float[] times = new float[]{0};
 
                     Vector3f[] translations = new Vector3f[]{joint.getLocalTranslation()};
@@ -895,27 +945,27 @@ public class GltfLoader implements AssetLoader {
         }
 
         anim.setTracks(aTracks.toArray(new AnimTrack[aTracks.size()]));
-
         anim = customContentManager.readExtensionAndExtras("animations", animation, anim);
 
         if (skinIndex != -1) {
-            //we have a armature animation.
+            // we have an armature animation.
             SkinData skin = fetchFromCache("skins", skinIndex, SkinData.class);
             skin.animComposer.addAnimClip(anim);
         }
 
         if (!spatials.isEmpty()) {
             if (skinIndex != -1) {
-                //there are some spatial or moph tracks in this bone animation... or the other way around. Let's add the spatials in the skinnedSpatials.
+                // there are some spatial or morph tracks in this bone animation... or the other way around.
+                // Let's add the spatials in the skinnedSpatials.
                 SkinData skin = fetchFromCache("skins", skinIndex, SkinData.class);
                 List<Spatial> spat = skinnedSpatials.get(skin);
                 spat.addAll(spatials);
-                //the animControl will be added in the setupControls();
+                // the animControl will be added in the setupControls();
                 if (hasMorphTrack && skin.morphControl == null) {
                     skin.morphControl = new MorphControl();
                 }
             } else {
-                //Spatial animation
+                // Spatial animation
                 Spatial spatial = null;
                 if (spatials.size() == 1) {
                     spatial = spatials.get(0);
@@ -962,22 +1012,23 @@ public class GltfLoader implements AssetLoader {
 
     public void readSkins() throws IOException {
         if (skins == null) {
-            //no skins, no bone animation.
+            // no skins, no bone animation.
             return;
         }
         List<JsonArray> allJoints = new ArrayList<>();
         for (int index = 0; index < skins.size(); index++) {
             JsonObject skin = skins.get(index).getAsJsonObject();
 
-            //Note that the "skeleton" index is intentionally ignored.
-            //It's not mandatory and exporters tends to mix up how it should be used because the specs are not clear.
-            //Anyway we have other means to detect both armature structures and root bones.
+            // Note that the "skeleton" index is intentionally ignored.
+            // It's not mandatory and exporters tends to mix up how it should be used
+            // because the specs are not clear.
+            // Anyway we have other means to detect both armature structures and root bones.
 
             JsonArray jsonJoints = skin.getAsJsonArray("joints");
             assertNotNull(jsonJoints, "No joints defined for skin");
             int idx = allJoints.indexOf(jsonJoints);
             if (idx >= 0) {
-                //skin already exists let's just set it in the cache
+                // skin already exists let's just set it in the cache
                 SkinData sd = fetchFromCache("skins", idx, SkinData.class);
                 addToCache("skins", index, sd, nodes.size());
                 continue;
@@ -985,8 +1036,9 @@ public class GltfLoader implements AssetLoader {
                 allJoints.add(jsonJoints);
             }
 
-            //These inverse bind matrices, once inverted again, will give us the real bind pose of the bones (in model space),
-            //since the skeleton in not guaranteed to be exported in bind pose.
+            // These inverse bind matrices, once inverted again,
+            // will give us the real bind pose of the bones (in model space),
+            // since the skeleton in not guaranteed to be exported in bind pose.
             Integer matricesIndex = getAsInteger(skin, "inverseBindMatrices");
             Matrix4f[] inverseBindMatrices = null;
             if (matricesIndex != null) {
@@ -1010,7 +1062,6 @@ public class GltfLoader implements AssetLoader {
             }
 
             Armature armature = new Armature(joints);
-
             armature = customContentManager.readExtensionAndExtras("skin", skin, armature);
             SkinData skinData = new SkinData();
             skinData.joints = joints;
@@ -1024,8 +1075,8 @@ public class GltfLoader implements AssetLoader {
         }
     }
 
-    public Joint readNodeAsBone(int nodeIndex, int jointIndex, int skinIndex, Matrix4f inverseModelBindMatrix) throws IOException {
-
+    public Joint readNodeAsBone(int nodeIndex, int jointIndex, int skinIndex, Matrix4f inverseModelBindMatrix)
+            throws IOException {
         JointWrapper jointWrapper = fetchFromCache("nodes", nodeIndex, JointWrapper.class);
         if (jointWrapper != null) {
             return jointWrapper.joint;
@@ -1048,6 +1099,12 @@ public class GltfLoader implements AssetLoader {
 
     private void findChildren(int nodeIndex) throws IOException {
         JointWrapper jw = fetchFromCache("nodes", nodeIndex, JointWrapper.class);
+        if (jw == null) {
+            logger.log(Level.WARNING,
+                    "No JointWrapper found for nodeIndex={0}.", nodeIndex);
+            return;
+        }
+
         JsonObject nodeData = nodes.get(nodeIndex).getAsJsonObject();
         JsonArray children = nodeData.getAsJsonArray("children");
 
@@ -1055,7 +1112,7 @@ public class GltfLoader implements AssetLoader {
             for (JsonElement child : children) {
                 int childIndex = child.getAsInt();
                 if (jw.children.contains(childIndex)) {
-                    //bone already has the child in its children
+                    // bone already has the child in its children
                     continue;
                 }
                 JointWrapper cjw = fetchFromCache("nodes", childIndex, JointWrapper.class);
@@ -1063,17 +1120,17 @@ public class GltfLoader implements AssetLoader {
                     jw.joint.addChild(cjw.joint);
                     jw.children.add(childIndex);
                 } else {
-                    //The child might be a Node
-                    //Creating a dummy node to read the subgraph
+                    // The child might be a Node
+                    // Creating a dummy node to read the subgraph
                     Node n = new Node();
                     readChild(n, child);
                     Spatial s = n.getChild(0);
-                    //removing the spatial from the dummy node, it will be attached to the attachment node of the bone
+                    // removing the spatial from the dummy node,
+                    // it will be attached to the attachment node of the bone
                     s.removeFromParent();
                     jw.attachedSpatial = s;
                 }
             }
-
         }
     }
 
@@ -1088,14 +1145,12 @@ public class GltfLoader implements AssetLoader {
             if (spatials.size() >= 1) {
                 spatial = findCommonAncestor(spatials);
             }
-
 //            if (spatial != skinData.parent) {
 //                skinData.rootBoneTransformOffset = spatial.getWorldTransform().invert();
 //                if (skinData.parent != null) {
 //                    skinData.rootBoneTransformOffset.combineWithParent(skinData.parent.getWorldTransform());
 //                }
 //            }
-            
             if (skinData.animComposer != null && skinData.animComposer.getSpatial() == null) {
                 spatial.addControl(skinData.animComposer);
             }
@@ -1110,8 +1165,16 @@ public class GltfLoader implements AssetLoader {
             if (bw == null || bw.attachedSpatial == null) {
                 continue;
             }
+            String jointName = bw.joint.getName();
             SkinData skinData = fetchFromCache("skins", bw.skinIndex, SkinData.class);
-            skinData.skinningControl.getAttachmentsNode(bw.joint.getName()).attachChild(bw.attachedSpatial);
+            SkinningControl skinControl = skinData.skinningControl;
+            if (skinControl.getSpatial() == null) {
+                logger.log(Level.WARNING,
+                        "No skinned Spatial for joint \"{0}\" -- will skin the model's root node!",
+                        jointName);
+                rootNode.addControl(skinControl);
+            }
+            skinControl.getAttachmentsNode(jointName).attachChild(bw.attachedSpatial);
         }
     }
 
@@ -1131,7 +1194,6 @@ public class GltfLoader implements AssetLoader {
         } catch (ClassCastException e) {
             return null;
         }
-
     }
 
     public void addToCache(String name, int index, Object object, int maxLength) {
@@ -1155,6 +1217,14 @@ public class GltfLoader implements AssetLoader {
         return rootNode;
     }
 
+    private String decodeUri(String uri) {
+        try {
+            return URLDecoder.decode(uri, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            return uri; // This would mean that UTF-8 is unsupported on the platform.
+        }
+    }
+
     public static class WeightData {
         float value;
         short index;
@@ -1166,7 +1236,6 @@ public class GltfLoader implements AssetLoader {
             this.componentSize = componentSize;
         }
     }
-
 
     private class JointWrapper {
         Joint joint;
@@ -1204,12 +1273,12 @@ public class GltfLoader implements AssetLoader {
             this.componentSize = componentSize;
         }
 
-        public SkinBuffers() {
-        }
+        public SkinBuffers() {}
     }
 
     private interface Populator<T> {
-        T populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException;
+        T populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset,
+                boolean normalized) throws IOException;
     }
 
     private class VertexBufferPopulator implements Populator<VertexBuffer> {
@@ -1220,20 +1289,20 @@ public class GltfLoader implements AssetLoader {
         }
 
         @Override
-        public VertexBuffer populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException {
-
+        public VertexBuffer populate(Integer bufferViewIndex, int componentType, String type, int count,
+                int byteOffset, boolean normalized) throws IOException {
             if (bufferType == null) {
-                logger.log(Level.WARNING, "could not assign data to any VertexBuffer type for buffer view " + bufferViewIndex);
+                logger.log(Level.WARNING, "could not assign data to any VertexBuffer type for buffer view {0}", bufferViewIndex);
                 return null;
             }
-
 
             VertexBuffer vb = new VertexBuffer(bufferType);
             VertexBuffer.Format format = getVertexBufferFormat(componentType);
             VertexBuffer.Format originalFormat = format;
             if (normalized) {
-                //Some float data can be packed into short buffers, "normalized" means they have to be unpacked.
-                //In that case the buffer is a FloatBuffer
+                // Some float data can be packed into short buffers,
+                // "normalized" means they have to be unpacked.
+                // In that case the buffer is a FloatBuffer
                 format = VertexBuffer.Format.Float;
             }
             int numComponents = getNumberOfComponents(type);
@@ -1241,7 +1310,7 @@ public class GltfLoader implements AssetLoader {
             Buffer buff = VertexBuffer.createBuffer(format, numComponents, count);
             int bufferSize = numComponents * count;
             if (bufferViewIndex == null) {
-                //no referenced buffer, specs says to pad the buffer with zeros.
+                // no referenced buffer, specs says to pad the buffer with zeros.
                 padBuffer(buff, bufferSize);
             } else {
                 readBuffer(bufferViewIndex, byteOffset, count, buff, numComponents, originalFormat);
@@ -1254,44 +1323,45 @@ public class GltfLoader implements AssetLoader {
 
             return vb;
         }
-
     }
 
     private class FloatArrayPopulator implements Populator<float[]> {
 
         @Override
-        public float[] populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException {
-
+        public float[] populate(Integer bufferViewIndex, int componentType, String type, int count,
+                int byteOffset, boolean normalized) throws IOException {
             int numComponents = getNumberOfComponents(type);
             int dataSize = numComponents * count;
             float[] data = new float[dataSize];
 
             if (bufferViewIndex == null) {
-                //no referenced buffer, specs says to pad the data with zeros.
+                // no referenced buffer, specs says to pad the data with zeros.
                 padBuffer(data, dataSize);
             } else {
-                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents, getVertexBufferFormat(componentType));
+                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents,
+                        getVertexBufferFormat(componentType));
             }
 
             return data;
         }
-
     }
 //
-//    private class FloaGridPopulator implements Populator<float[]> {
+//    private class FloatGridPopulator implements Populator<float[]> {
 //
 //        @Override
-//        public float[][] populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException {
+//        public float[][] populate(Integer bufferViewIndex, int componentType, String type, int count,
+//                int byteOffset, boolean normalized) throws IOException {
 //
 //            int numComponents = getNumberOfComponents(type);
 //            int dataSize = numComponents * count;
 //            float[] data = new float[dataSize];
 //
 //            if (bufferViewIndex == null) {
-//                //no referenced buffer, specs says to pad the data with zeros.
+//                // no referenced buffer, specs says to pad the data with zeros.
 //                padBuffer(data, dataSize);
 //            } else {
-//                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents, getVertexBufferFormat(componentType));
+//                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents,
+//                        getVertexBufferFormat(componentType));
 //            }
 //
 //            return data;
@@ -1302,17 +1372,18 @@ public class GltfLoader implements AssetLoader {
     private class Vector3fArrayPopulator implements Populator<Vector3f[]> {
 
         @Override
-        public Vector3f[] populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException {
-
+        public Vector3f[] populate(Integer bufferViewIndex, int componentType, String type, int count,
+                int byteOffset, boolean normalized) throws IOException {
             int numComponents = getNumberOfComponents(type);
             int dataSize = numComponents * count;
             Vector3f[] data = new Vector3f[count];
 
             if (bufferViewIndex == null) {
-                //no referenced buffer, specs says to pad the data with zeros.
+                // no referenced buffer, specs says to pad the data with zeros.
                 padBuffer(data, dataSize);
             } else {
-                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents, getVertexBufferFormat(componentType));
+                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents,
+                        getVertexBufferFormat(componentType));
             }
             return data;
         }
@@ -1321,17 +1392,18 @@ public class GltfLoader implements AssetLoader {
     private class QuaternionArrayPopulator implements Populator<Quaternion[]> {
 
         @Override
-        public Quaternion[] populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException {
-
+        public Quaternion[] populate(Integer bufferViewIndex, int componentType, String type, int count,
+                int byteOffset, boolean normalized) throws IOException {
             int numComponents = getNumberOfComponents(type);
             int dataSize = numComponents * count;
             Quaternion[] data = new Quaternion[count];
 
             if (bufferViewIndex == null) {
-                //no referenced buffer, specs says to pad the data with zeros.
+                // no referenced buffer, specs says to pad the data with zeros.
                 padBuffer(data, dataSize);
             } else {
-                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents, getVertexBufferFormat(componentType));
+                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents,
+                        getVertexBufferFormat(componentType));
             }
 
             return data;
@@ -1341,17 +1413,18 @@ public class GltfLoader implements AssetLoader {
     private class Matrix4fArrayPopulator implements Populator<Matrix4f[]> {
 
         @Override
-        public Matrix4f[] populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException {
-
+        public Matrix4f[] populate(Integer bufferViewIndex, int componentType, String type, int count,
+                int byteOffset, boolean normalized) throws IOException {
             int numComponents = getNumberOfComponents(type);
             int dataSize = numComponents * count;
             Matrix4f[] data = new Matrix4f[count];
 
             if (bufferViewIndex == null) {
-                //no referenced buffer, specs says to pad the data with zeros.
+                // no referenced buffer, specs says to pad the data with zeros.
                 padBuffer(data, dataSize);
             } else {
-                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents, getVertexBufferFormat(componentType));
+                readBuffer(bufferViewIndex, byteOffset, count, data, numComponents,
+                        getVertexBufferFormat(componentType));
             }
 
             return data;
@@ -1361,11 +1434,11 @@ public class GltfLoader implements AssetLoader {
     private class JointArrayPopulator implements Populator<SkinBuffers> {
 
         @Override
-        public SkinBuffers populate(Integer bufferViewIndex, int componentType, String type, int count, int byteOffset, boolean normalized) throws IOException {
-
+        public SkinBuffers populate(Integer bufferViewIndex, int componentType, String type, int count,
+                int byteOffset, boolean normalized) throws IOException {
             int numComponents = getNumberOfComponents(type);
 
-            //can be bytes or shorts.
+            // can be bytes or shorts.
             VertexBuffer.Format format = VertexBuffer.Format.Byte;
             if (componentType == 5123) {
                 format = VertexBuffer.Format.Short;
@@ -1375,7 +1448,7 @@ public class GltfLoader implements AssetLoader {
             short[] data = new short[dataSize];
 
             if (bufferViewIndex == null) {
-                //no referenced buffer, specs says to pad the data with zeros.
+                // no referenced buffer, specs says to pad the data with zeros.
                 padBuffer(data, dataSize);
             } else {
                 readBuffer(bufferViewIndex, byteOffset, count, data, numComponents, format);
@@ -1384,6 +1457,4 @@ public class GltfLoader implements AssetLoader {
             return new SkinBuffers(data, format.getComponentSize());
         }
     }
-
 }
-

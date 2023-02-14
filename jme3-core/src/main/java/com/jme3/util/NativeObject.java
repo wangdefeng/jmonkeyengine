@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
  */
 package com.jme3.util;
 
+import java.lang.ref.WeakReference;
 import java.nio.Buffer;
 
 /**
@@ -79,6 +80,8 @@ public abstract class NativeObject implements Cloneable {
      */
     protected boolean updateNeeded = true;
 
+    private WeakReference<NativeObject> weakRef;
+
     /**
      * Creates a new GLObject. Should be
      * called by the subclasses.
@@ -90,6 +93,8 @@ public abstract class NativeObject implements Cloneable {
     /**
      * Protected constructor that doesn't allocate handle ref.
      * This is used in subclasses for the createDestructableClone().
+     *
+     * @param id the desired ID
      */
     protected NativeObject(int id){
         this.id = id;
@@ -137,6 +142,8 @@ public abstract class NativeObject implements Cloneable {
 
     /**
      * Internal use only. Check if {@link #setUpdateNeeded()} was called before.
+     *
+     * @return true if an update is needed, otherwise false
      */
     public boolean isUpdateNeeded(){
         return updateNeeded;
@@ -204,6 +211,8 @@ public abstract class NativeObject implements Cloneable {
     /**
      * Creates a shallow clone of this GL Object. The deleteObject method
      * should be functional for this object.
+     *
+     * @return a new instance
      */
     public abstract NativeObject createDestructableClone();
     
@@ -226,5 +235,18 @@ public abstract class NativeObject implements Cloneable {
         if (objectManager != null) {
             objectManager.enqueueUnusedObject(this);
         }
+    }
+
+    /**
+     * Acquire a weak reference to this NativeObject.
+     *
+     * @param <T> the type
+     * @return a weak reference (possibly a pre-existing one)
+     */
+    public <T> WeakReference<T> getWeakRef() {
+        if (weakRef == null) {
+            weakRef = new WeakReference<>(this);
+        }
+        return (WeakReference<T>) weakRef;
     }
 }

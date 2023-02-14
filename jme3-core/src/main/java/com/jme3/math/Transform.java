@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2022 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,48 +37,88 @@ import com.jme3.util.TempVars;
 import java.io.IOException;
 
 /**
- * Started Date: Jul 16, 2004<br><br>
- * Represents a translation, rotation and scale in one object.
- * 
+ * A 3-D coordinate transform composed of translation, rotation, and scaling.
+ * The order of application is: scale, then rotate, then translate.
+ *
+ * <p>Started July 16, 2004
+ *
  * @author Jack Lindamood
  * @author Joshua Slack
  */
 public final class Transform implements Savable, Cloneable, java.io.Serializable {
 
     static final long serialVersionUID = 1;
-
+    /**
+     * Shared instance of the identity transform. Do not modify!
+     */
     public static final Transform IDENTITY = new Transform();
-
+    /**
+     * Rotation component.
+     */
     private Quaternion rot = new Quaternion();
+    /**
+     * Translation component: an offset for each local axis.
+     */
     private Vector3f translation = new Vector3f();
+    /**
+     * Scaling component: a scale factor for each local axis.
+     */
     private Vector3f scale = new Vector3f(1, 1, 1);
 
-    public Transform(Vector3f translation, Quaternion rot){
+    /**
+     * Instantiates a coordinate transform without scaling.
+     *
+     * @param translation the desired translation (not null, unaffected)
+     * @param rot the desired rotation (not null, unaffected)
+     */
+    public Transform(Vector3f translation, Quaternion rot) {
         this.translation.set(translation);
         this.rot.set(rot);
     }
-    
-    public Transform(Vector3f translation, Quaternion rot, Vector3f scale){
+
+    /**
+     * Instantiates a coordinate transform with scaling.
+     *
+     * @param translation the desired translation (not null, unaffected)
+     * @param rot the desired rotation (not null, unaffected)
+     * @param scale the desired scaling (not null, unaffected)
+     */
+    public Transform(Vector3f translation, Quaternion rot, Vector3f scale) {
         this(translation, rot);
         this.scale.set(scale);
     }
 
-    public Transform(Vector3f translation){
+    /**
+     * Instantiates a translation-only transform.
+     *
+     * @param translation the desired translation (not null, unaffected)
+     */
+    public Transform(Vector3f translation) {
         this(translation, Quaternion.IDENTITY);
     }
 
-    public Transform(Quaternion rot){
+    /**
+     * Instantiates a rotation-only transform.
+     *
+     * @param rot the desired rotation (not null, unaffected)
+     */
+    public Transform(Quaternion rot) {
         this(Vector3f.ZERO, rot);
     }
 
-    public Transform(){
+    /**
+     * Instantiates an identity transform: no translation, no rotation, and no
+     * scaling.
+     */
+    public Transform() {
         this(Vector3f.ZERO, Quaternion.IDENTITY);
     }
 
     /**
-     * Sets this rotation to the given Quaternion value.
-     * @param rot The new rotation for this matrix.
-     * @return this
+     * Sets the rotation component to the argument.
+     *
+     * @param rot the desired rotation value (not null, unaffected)
+     * @return the (modified) current instance (for chaining)
      */
     public Transform setRotation(Quaternion rot) {
         this.rot.set(rot);
@@ -86,9 +126,10 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
     }
 
     /**
-     * Sets this translation to the given value.
-     * @param trans The new translation for this matrix.
-     * @return this
+     * Sets the translation component to the argument.
+     *
+     * @param trans the desired offsets (not null, unaffected)
+     * @return the (modified) current instance (for chaining)
      */
     public Transform setTranslation(Vector3f trans) {
         this.translation.set(trans);
@@ -96,17 +137,19 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
     }
 
     /**
-     * Return the translation vector in this matrix.
-     * @return translation vector.
+     * Returns the translation component.
+     *
+     * @return the pre-existing instance (not null)
      */
     public Vector3f getTranslation() {
         return translation;
     }
 
     /**
-     * Sets this scale to the given value.
-     * @param scale The new scale for this matrix.
-     * @return this
+     * Sets the scaling component to the argument.
+     *
+     * @param scale the desired scale factors (not null, unaffected)
+     * @return the (modified) current instance (for chaining)
      */
     public Transform setScale(Vector3f scale) {
         this.scale.set(scale);
@@ -114,9 +157,10 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
     }
 
     /**
-     * Sets this scale to the given value.
-     * @param scale The new scale for this matrix.
-     * @return this
+     * Sets the scaling component to the argument. This yields uniform scaling.
+     *
+     * @param scale the desired scale factor for all local axes
+     * @return the (modified) current instance (for chaining)
      */
     public Transform setScale(float scale) {
         this.scale.set(scale, scale, scale);
@@ -124,74 +168,98 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
     }
 
     /**
-     * Return the scale vector in this matrix.
-     * @return scale vector.
+     * Returns the scaling component.
+     *
+     * @return the pre-existing instance (not null)
      */
     public Vector3f getScale() {
         return scale;
     }
 
     /**
-     * Stores this translation value into the given vector3f.  If trans is null, a new vector3f is created to
-     * hold the value.  The value, once stored, is returned.
-     * @param trans The store location for this matrix's translation.
-     * @return The value of this matrix's translation.
+     * Copies the translation component to the argument. If the argument is
+     * null, a new Vector3f is created to hold the value. Either way, the
+     * current instance is unaffected, unless the argument is its scaling
+     * component.
+     *
+     * @param trans storage for the result (modified if not null)
+     * @return the translation offsets (either <code>trans</code> or a new
+     *     Vector3f)
      */
     public Vector3f getTranslation(Vector3f trans) {
-        if (trans==null) trans=new Vector3f();
+        if (trans == null) {
+            trans = new Vector3f();
+        }
         trans.set(this.translation);
         return trans;
     }
 
     /**
-     * Stores this rotation value into the given Quaternion.  If quat is null, a new Quaternion is created to
-     * hold the value.  The value, once stored, is returned.
-     * @param quat The store location for this matrix's rotation.
-     * @return The value of this matrix's rotation.
+     * Copies the rotation component to the argument. If the argument is null, a
+     * new Quaternion is created to hold the value. Either way, the current
+     * instance is unaffected.
+     *
+     * @param quat storage for the result (modified if not null)
+     * @return the rotation value (either <code>quat</code> or a new Quaternion)
      */
     public Quaternion getRotation(Quaternion quat) {
-        if (quat==null) quat=new Quaternion();
+        if (quat == null) {
+            quat = new Quaternion();
+        }
         quat.set(rot);
         return quat;
     }
-    
+
     /**
-     * Return the rotation quaternion in this matrix.
-     * @return rotation quaternion.
+     * Returns the rotation component.
+     *
+     * @return the pre-existing instance (not null)
      */
     public Quaternion getRotation() {
         return rot;
-    } 
-    
+    }
+
     /**
-     * Stores this scale value into the given vector3f.  If scale is null, a new vector3f is created to
-     * hold the value.  The value, once stored, is returned.
-     * @param scale The store location for this matrix's scale.
-     * @return The value of this matrix's scale.
+     * Copies the scaling component to the argument. If the argument is null, a
+     * new Vector3f is created to hold the value. Either way, the current
+     * instance is unaffected, unless the argument is its translation component.
+     *
+     * @param scale storage for the result (modified if not null)
+     * @return the scale factors (either <code>scale</code> or a new Vector3f)
      */
     public Vector3f getScale(Vector3f scale) {
-        if (scale==null) scale=new Vector3f();
+        if (scale == null) {
+            scale = new Vector3f();
+        }
         scale.set(this.scale);
         return scale;
     }
 
     /**
-     * Sets this transform to the interpolation between the first transform and the second by delta amount.
-     * @param t1 The beginning transform.
-     * @param t2 The ending transform.
-     * @param delta An amount between 0 and 1 representing how far to interpolate from t1 to t2.
+     * Interpolates quickly between the specified transforms, using
+     * {@link Quaternion#nlerp(com.jme3.math.Quaternion, float)} and
+     * {@link Vector3f#interpolateLocal(com.jme3.math.Vector3f, com.jme3.math.Vector3f, float)}.
+     *
+     * @param t1 the desired value when <code>delta</code>=0 (not null,
+     *     unaffected unless it's <code>this</code>)
+     * @param t2 the desired value when <code>delta</code>=1 (not null,
+     *     unaffected unless it's <code>this</code>)
+     * @param delta the fractional change amount
      */
     public void interpolateTransforms(Transform t1, Transform t2, float delta) {
-        t1.rot.nlerp(t2.rot, delta);
         this.rot.set(t1.rot);
-        this.translation.interpolateLocal(t1.translation,t2.translation,delta);
-        this.scale.interpolateLocal(t1.scale,t2.scale,delta);
+        this.rot.nlerp(t2.rot, delta);
+        this.translation.interpolateLocal(t1.translation, t2.translation, delta);
+        this.scale.interpolateLocal(t1.scale, t2.scale, delta);
     }
 
     /**
-     * Changes the values of this matrix according to its parent.  Very similar to the concept of Node/Spatial transforms.
-     * @param parent The parent matrix.
-     * @return This matrix, after combining.
+     * Combines with the argument and returns the (modified) current instance.
+     * This method is used to combine Node and Spatial transforms.
+     *
+     * @param parent the parent transform (not null, unaffected unless it's
+     *     <code>this</code>)
+     * @return the (modified) current instance (for chaining)
      */
     public Transform combineWithParent(Transform parent) {
         //applying parent scale to local scale
@@ -202,56 +270,82 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
         translation.multLocal(parent.scale);
         //applying parent rotation to local translation, then applying parent translation to local translation.
         //Note that parent.rot.multLocal(translation) doesn't modify "parent.rot" but "translation"
-        parent
-            .rot
-            .multLocal(translation)
-            .addLocal(parent.translation);
+        parent.rot
+                .multLocal(translation)
+                .addLocal(parent.translation);
 
         return this;
     }
 
     /**
-     * Sets this matrix's translation to the given x,y,z values.
-     * @param x This matrix's new x translation.
-     * @param y This matrix's new y translation.
-     * @param z This matrix's new z translation.
-     * @return this
+     * Sets the translation component to the specified values.
+     *
+     * @param x the desired X offset
+     * @param y the desired Y offset
+     * @param z the desired Z offset
+     * @return the (modified) current instance (for chaining)
      */
-    public Transform setTranslation(float x,float y, float z) {
-        translation.set(x,y,z);
+    public Transform setTranslation(float x, float y, float z) {
+        translation.set(x, y, z);
         return this;
     }
 
     /**
-     * Sets this matrix's scale to the given x,y,z values.
-     * @param x This matrix's new x scale.
-     * @param y This matrix's new y scale.
-     * @param z This matrix's new z scale.
-     * @return this
+     * Sets the scaling component to the specified values.
+     *
+     * @param x the desired X scale factor
+     * @param y the desired Y scale factor
+     * @param z the desired Z scale factor
+     * @return the (modified) current instance (for chaining)
      */
     public Transform setScale(float x, float y, float z) {
-        scale.set(x,y,z);
+        scale.set(x, y, z);
         return this;
     }
 
-    public Vector3f transformVector(final Vector3f in, Vector3f store){
-        if (store == null)
+    /**
+     * Transforms the specified coordinates and returns the result in
+     * <code>store</code>. If the <code>store</code> is null, a new Vector3f is
+     * created to hold the value. Either way, the current instance is
+     * unaffected, unless <code>store</code> is its translation or scaling.
+     *
+     * @param in the coordinates to transform (not null, unaffected)
+     * @param store storage for the result (modified if not null)
+     * @return the transformed coordinates (either <code>store</code> or a new
+     *     Vector3f)
+     */
+    public Vector3f transformVector(final Vector3f in, Vector3f store) {
+        if (store == null) {
             store = new Vector3f();
+        }
 
         // multiply with scale first, then rotate, finally translate (cf.
         // Eberly)
         return rot.mult(store.set(in).multLocal(scale), store).addLocal(translation);
     }
 
-    public Vector3f transformInverseVector(final Vector3f in, Vector3f store){
-        if (store == null)
+    /**
+     * Applies the inverse transform to the specified coordinates and returns
+     * the result in <code>store</code>. If the <code>store</code> is null, a
+     * new Vector3f is created to hold the value. Either way, the current
+     * instance is unaffected, unless <code>store</code> is its translation or
+     * scaling.
+     *
+     * @param in the coordinates to transform (not null, unaffected unless it's
+     *     <code>store</code>)
+     * @param store storage for the result (modified if not null)
+     * @return the transformed coordinates (either <code>store</code> or a new
+     *     Vector3f)
+     */
+    public Vector3f transformInverseVector(final Vector3f in, Vector3f store) {
+        if (store == null) {
             store = new Vector3f();
+        }
 
-        // The author of this code should look above and take the inverse of that
-        // But for some reason, they didn't ..
+        // The author of this code should've looked above and taken the inverse of that,
+        // but for some reason, they didn't.
 //        in.subtract(translation, store).divideLocal(scale);
 //        rot.inverse().mult(store, store);
-
         in.subtract(translation, store);
         rot.inverse().mult(store, store);
         store.divideLocal(scale);
@@ -259,10 +353,23 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
         return store;
     }
 
+    /**
+     * Creates an equivalent transform matrix. The current instance is
+     * unaffected.
+     *
+     * @return a new Matrix4f
+     */
     public Matrix4f toTransformMatrix() {
         return toTransformMatrix(null);
     }
 
+    /**
+     * Converts to an equivalent transform matrix. The current instance is
+     * unaffected.
+     *
+     * @param store storage for the result (modified if not null)
+     * @return a transform matrix (either <code>store</code> or a new Matrix4f)
+     */
     public Matrix4f toTransformMatrix(Matrix4f store) {
         if (store == null) {
             store = new Matrix4f();
@@ -272,7 +379,14 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
         store.setScale(scale);
         return store;
     }
-    
+
+    /**
+     * Sets the current instance from a transform matrix. Any shear in the
+     * matrix is lost -- in other words, it may not be possible to recreate the
+     * original matrix from the result.
+     *
+     * @param mat the input matrix (not null, unaffected)
+     */
     public void fromTransformMatrix(Matrix4f mat) {
         TempVars vars = TempVars.get();
         translation.set(mat.toTranslationVector(vars.vect1));
@@ -280,15 +394,21 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
         scale.set(mat.toScaleVector(vars.vect2));
         vars.release();
     }
-    
+
+    /**
+     * Returns the inverse. The current instance is unaffected.
+     *
+     * @return a new Transform
+     */
     public Transform invert() {
         Transform t = new Transform();
         t.fromTransformMatrix(toTransformMatrix().invertLocal());
         return t;
     }
-    
+
     /**
-     * Loads the identity.  Equal to translation=0,0,0 scale=1,1,1 rot=0,0,0,1.
+     * Sets the current instance to the identity transform: translation=(0,0,0)
+     * scaling=(1,1,1) rotation=(0,0,0,1).
      */
     public void loadIdentity() {
         translation.set(0, 0, 0);
@@ -297,9 +417,9 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
     }
 
     /**
-     * Test for exact identity.
+     * Tests for exact identity. The current instance is unaffected.
      *
-     * @return true if exactly equal to {@link #IDENTITY}, otherwise false
+     * @return true if equal to {@link #IDENTITY}, otherwise false
      */
     public boolean isIdentity() {
         return translation.x == 0f && translation.y == 0f && translation.z == 0f
@@ -307,6 +427,12 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
                 && rot.w == 1f && rot.x == 0f && rot.y == 0f && rot.z == 0f;
     }
 
+    /**
+     * Returns a hash code. If two transforms have identical values, they
+     * will have the same hash code. The current instance is unaffected.
+     *
+     * @return a 32-bit value for use in hashing
+     */
     @Override
     public int hashCode() {
         int hash = 7;
@@ -316,6 +442,15 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
         return hash;
     }
 
+    /**
+     * Tests for exact equality with the argument, distinguishing -0 from 0. If
+     * {@code obj} is null, false is returned. Either way, the current instance
+     * is unaffected.
+     *
+     * @param obj the object to compare (may be null, unaffected)
+     * @return true if {@code this} and {@code obj} have identical values,
+     *     otherwise false
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj == null) {
@@ -330,25 +465,45 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
                 && this.rot.equals(other.rot);
     }
 
+    /**
+     * Returns a string representation of the transform, which is unaffected.
+     * For example, the identity transform is represented by:
+     * <pre>
+     * Transform[ 0.0, 0.0, 0.0]
+     * [ 0.0, 0.0, 0.0, 1.0]
+     * [ 1.0 , 1.0, 1.0]
+     * </pre>
+     *
+     * @return the string representation (not null, not empty)
+     */
     @Override
-    public String toString(){
-        return getClass().getSimpleName() + "[ " + translation.x + ", " + translation.y + ", " + translation.z + "]\n"
-                                          + "[ " + rot.x + ", " + rot.y + ", " + rot.z + ", " + rot.w + "]\n"
-                                          + "[ " + scale.x + " , " + scale.y + ", " + scale.z + "]";
+    public String toString() {
+        return getClass().getSimpleName()
+                + "[ " + translation.x + ", " + translation.y + ", " + translation.z + "]\n"
+                + "[ " + rot.x + ", " + rot.y + ", " + rot.z + ", " + rot.w + "]\n"
+                + "[ " + scale.x + " , " + scale.y + ", " + scale.z + "]";
     }
 
     /**
-     * Sets this matrix to be equal to the given matrix.
-     * @param matrixQuat The matrix to be equal to.
-     * @return this
+     * Copies all 3 components from the argument.
+     *
+     * @param transform The Transform to copy (not null, unaffected)
+     * @return the (modified) current instance (for chaining)
      */
-    public Transform set(Transform matrixQuat) {
-        this.translation.set(matrixQuat.translation);
-        this.rot.set(matrixQuat.rot);
-        this.scale.set(matrixQuat.scale);
+    public Transform set(Transform transform) {
+        this.translation.set(transform.translation);
+        this.rot.set(transform.rot);
+        this.scale.set(transform.scale);
         return this;
     }
 
+    /**
+     * Serializes to the argument, for example when saving to a J3O file. The
+     * current instance is unaffected.
+     *
+     * @param e (not null)
+     * @throws IOException from the exporter
+     */
     @Override
     public void write(JmeExporter e) throws IOException {
         OutputCapsule capsule = e.getCapsule(this);
@@ -357,15 +512,27 @@ public final class Transform implements Savable, Cloneable, java.io.Serializable
         capsule.write(scale, "scale", Vector3f.UNIT_XYZ);
     }
 
+    /**
+     * De-serializes from the argument, for example when loading from a J3O
+     * file.
+     *
+     * @param importer (not null)
+     * @throws IOException from the importer
+     */
     @Override
-    public void read(JmeImporter e) throws IOException {
-        InputCapsule capsule = e.getCapsule(this);
-        
-        rot.set((Quaternion)capsule.readSavable("rot", Quaternion.IDENTITY));
-        translation.set((Vector3f)capsule.readSavable("translation", Vector3f.ZERO));
-        scale.set((Vector3f)capsule.readSavable("scale", Vector3f.UNIT_XYZ));
+    public void read(JmeImporter importer) throws IOException {
+        InputCapsule capsule = importer.getCapsule(this);
+
+        rot.set((Quaternion) capsule.readSavable("rot", Quaternion.IDENTITY));
+        translation.set((Vector3f) capsule.readSavable("translation", Vector3f.ZERO));
+        scale.set((Vector3f) capsule.readSavable("scale", Vector3f.UNIT_XYZ));
     }
-    
+
+    /**
+     * Creates a copy. The current instance is unaffected.
+     *
+     * @return a new instance, equivalent to the current one
+     */
     @Override
     public Transform clone() {
         try {

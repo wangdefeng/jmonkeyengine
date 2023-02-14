@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2023 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,13 +41,16 @@ import com.jme3.opencl.Context;
 import com.jme3.renderer.Renderer;
 import com.jme3.system.*;
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 public class AwtPanelsContext implements JmeContext {
+
+    private static final Logger logger = Logger.getLogger(AwtPanelsContext.class.getName());
 
     protected JmeContext actualContext;
     protected AppSettings settings = new AppSettings(true);
     protected SystemListener listener;
-    protected ArrayList<AwtPanel> panels = new ArrayList<AwtPanel>();
+    protected ArrayList<AwtPanel> panels = new ArrayList<>();
     protected AwtPanel inputSource;
 
     protected AwtMouseInput mouseInput = new AwtMouseInput();
@@ -57,37 +60,50 @@ public class AwtPanelsContext implements JmeContext {
 
     private class AwtPanelsListener implements SystemListener {
 
+        @Override
         public void initialize() {
             initInThread();
         }
 
+        @Override
         public void reshape(int width, int height) {
-            throw new IllegalStateException();
+            logger.severe("reshape is not supported.");
         }
 
+        @Override
+        public void rescale(float x, float y) {
+            logger.severe("rescale is not supported.");
+        }
+
+        @Override
         public void update() {
             updateInThread();
         }
 
+        @Override
         public void requestClose(boolean esc) {
             // shouldn't happen
             throw new IllegalStateException();
         }
 
+        @Override
         public void gainFocus() {
             // shouldn't happen
             throw new IllegalStateException();
         }
 
+        @Override
         public void loseFocus() {
             // shouldn't happen
             throw new IllegalStateException();
         }
 
+        @Override
         public void handleError(String errorMsg, Throwable t) {
             listener.handleError(errorMsg, t);
         }
 
+        @Override
         public void destroy() {
             destroyInThread();
         }
@@ -102,46 +118,67 @@ public class AwtPanelsContext implements JmeContext {
         keyInput.setInputSource(panel);
     }
 
+    @Override
     public Type getType() {
         return Type.OffscreenSurface;
     }
 
+    /**
+     * Accesses the listener that receives events related to this context.
+     *
+     * @return the pre-existing instance
+     */
+    @Override
+    public SystemListener getSystemListener() {
+        return listener;
+    }
+
+    @Override
     public void setSystemListener(SystemListener listener) {
         this.listener = listener;
     }
 
+    @Override
     public AppSettings getSettings() {
         return settings;
     }
 
+    @Override
     public Renderer getRenderer() {
         return actualContext.getRenderer();
     }
 
+    @Override
     public MouseInput getMouseInput() {
         return mouseInput;
     }
 
+    @Override
     public KeyInput getKeyInput() {
         return keyInput;
     }
 
+    @Override
     public JoyInput getJoyInput() {
         return null;
     }
 
+    @Override
     public TouchInput getTouchInput() {
         return null;
     }
 
+    @Override
     public Timer getTimer() {
         return actualContext.getTimer();
     }
 
+    @Override
     public boolean isCreated() {
         return actualContext != null && actualContext.isCreated();
     }
 
+    @Override
     public boolean isRenderable() {
         return actualContext != null && actualContext.isRenderable();
     }
@@ -208,6 +245,7 @@ public class AwtPanelsContext implements JmeContext {
         listener.destroy();
     }
 
+    @Override
     public void setSettings(AppSettings settings) {
         this.settings.copyFrom(settings);
         this.settings.setRenderer(AppSettings.LWJGL_OPENGL2);
@@ -216,6 +254,7 @@ public class AwtPanelsContext implements JmeContext {
         }
     }
 
+    @Override
     public void create(boolean waitFor) {
         if (actualContext != null){
             throw new IllegalStateException("Already created");
@@ -226,6 +265,7 @@ public class AwtPanelsContext implements JmeContext {
         actualContext.create(waitFor);
     }
 
+    @Override
     public void destroy(boolean waitFor) {
         if (actualContext == null)
             throw new IllegalStateException("Not created");
@@ -234,16 +274,58 @@ public class AwtPanelsContext implements JmeContext {
         actualContext.destroy(waitFor);
     }
 
+    @Override
     public void setTitle(String title) {
         // not relevant, ignore
     }
 
+    @Override
     public void setAutoFlushFrames(boolean enabled) {
         // not relevant, ignore
     }
 
+    @Override
     public void restart() {
         // only relevant if changing pixel format.
     }
 
+    /**
+     * Returns the height of the input panel.
+     *
+     * @return the height (in pixels)
+     */
+    @Override
+    public int getFramebufferHeight() {
+        return inputSource.getHeight();
+    }
+
+    /**
+     * Returns the width of the input panel.
+     *
+     * @return the width (in pixels)
+     */
+    @Override
+    public int getFramebufferWidth() {
+        return inputSource.getWidth();
+    }
+
+    /**
+     * Returns the screen X coordinate of the left edge of the input panel.
+     *
+     * @return the screen X coordinate
+     */
+    @Override
+    public int getWindowXPosition() {
+        return inputSource.getX();
+    }
+
+    /**
+     * Returns the screen Y coordinate of the top edge of the input panel.
+     *
+     * @return the screen Y coordinate
+     */
+    @Override
+    public int getWindowYPosition() {
+        return inputSource.getY();
+    }
 }

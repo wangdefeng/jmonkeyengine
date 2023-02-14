@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@ import com.jme3.math.*;
 import com.jme3.renderer.Caps;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.Renderer;
+import com.jme3.renderer.TextureUnitException;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.scene.Geometry;
 import com.jme3.shader.*;
@@ -64,7 +65,7 @@ import java.util.logging.Logger;
  * those parameters map to uniforms which are defined in a shader.
  * Setting the parameters can modify the behavior of a
  * shader.
- * <p/>
+ * </p>
  *
  * @author Kirill Vainer
  */
@@ -77,18 +78,18 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
     private AssetKey key;
     private String name;
     private MaterialDef def;
-    private ListMap<String, MatParam> paramValues = new ListMap<String, MatParam>();
+    private ListMap<String, MatParam> paramValues = new ListMap<>();
     private Technique technique;
-    private HashMap<String, Technique> techniques = new HashMap<String, Technique>();
+    private HashMap<String, Technique> techniques = new HashMap<>();
     private RenderState additionalState = null;
-    private RenderState mergedRenderState = new RenderState();
+    final private RenderState mergedRenderState = new RenderState();
     private boolean transparent = false;
     private boolean receivesShadows = false;
     private int sortingId = -1;
 
     public Material(MaterialDef def) {
         if (def == null) {
-            throw new NullPointerException("Material definition cannot be null");
+            throw new IllegalArgumentException("Material definition cannot be null");
         }
         this.def = def;
 
@@ -101,7 +102,7 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
     }
 
     public Material(AssetManager contentMan, String defName) {
-        this((MaterialDef) contentMan.loadAsset(new AssetKey(defName)));
+        this(contentMan.loadAsset(new AssetKey<MaterialDef>(defName)));
     }
 
     /**
@@ -139,10 +140,12 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
         this.name = name;
     }
 
+    @Override
     public void setKey(AssetKey key) {
         this.key = key;
     }
 
+    @Override
     public AssetKey getKey() {
         return key;
     }
@@ -293,6 +296,8 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
 
     /**
      * Works like {@link Object#hashCode() } except it may change together with the material as the material is mutable by definition.
+     * 
+     * @return value for use in hashing
      */
     public int contentHashCode() {
         int hash = 7;
@@ -411,9 +416,11 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
     /**
      * Returns the current parameter's value.
      *
+     * @param <T> the expected type of the parameter value
      * @param name the parameter name to look up.
      * @return current value or null if the parameter wasn't set.
      */
+    @SuppressWarnings("unchecked")
     public <T> T getParamValue(final String name) {
         final MatParam param = paramValues.get(name);
         return param == null ? null : (T) param.getValue();
@@ -556,11 +563,13 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
         MatParamTexture paramDef = (MatParamTexture) def.getMaterialParam(name);
         if (paramDef.getColorSpace() != null && paramDef.getColorSpace() != value.getImage().getColorSpace()) {
             value.getImage().setColorSpace(paramDef.getColorSpace());
-            logger.log(Level.FINE, "Material parameter {0} needs a {1} texture, "
-                            + "texture {2} was switched to {3} color space.",
-                    new Object[]{name, paramDef.getColorSpace().toString(),
-                            value.getName(),
-                            value.getImage().getColorSpace().name()});
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, "Material parameter {0} needs a {1} texture, "
+                                + "texture {2} was switched to {3} color space.",
+                        new Object[]{name, paramDef.getColorSpace().toString(),
+                                value.getName(),
+                                value.getImage().getColorSpace().name()});
+            }
         } else if (paramDef.getColorSpace() == null && value.getName() != null && value.getImage().getColorSpace() == ColorSpace.Linear) {
             logger.log(Level.WARNING,
                     "The texture {0} has linear color space, but the material "
@@ -772,7 +781,9 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
                                 + "The capabilities %s are required.",
                                 name, def.getName(), lastTech.getRequiredCaps()));
             }
-            logger.log(Level.FINE, this.getMaterialDef().getName() + " selected technique def " + tech.getDef());
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, this.getMaterialDef().getName() + " selected technique def " + tech.getDef());
+            }
         } else if (technique == tech) {
             // attempting to switch to an already
             // active technique.
@@ -800,7 +811,14 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
 
             if (override.getValue() != null) {
                 if (type.isTextureType()) {
-                    renderer.setTexture(unit, (Texture) override.getValue());
+                    try {
+                        renderer.setTexture(unit, (Texture) override.getValue());
+                    } catch (TextureUnitException exception) {
+                        int numTexParams = unit + 1;
+                        String message = "Too many texture parameters ("
+                                + numTexParams + ") assigned\n to " + toString();
+                        throw new IllegalStateException(message);
+                    }
                     uniform.setValue(VarType.Int, unit);
                     unit++;
                 } else {
@@ -842,7 +860,14 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
                 }
 
                 if (type.isTextureType()) {
-                    renderer.setTexture(unit, (Texture) param.getValue());
+                    try {
+                        renderer.setTexture(unit, (Texture) param.getValue());
+                    } catch (TextureUnitException exception) {
+                        int numTexParams = unit + 1;
+                        String message = "Too many texture parameters ("
+                                + numTexParams + ") assigned\n to " + toString();
+                        throw new IllegalStateException(message);
+                    }
                     uniform.setValue(VarType.Int, unit);
                     unit++;
                 } else {
@@ -885,6 +910,7 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
      * been already been setup for rendering.
      *
      * @param renderManager The render manager to preload for
+     * @param geometry to determine the applicable parameter overrides, if any
      */
     public void preload(RenderManager renderManager, Geometry geometry) {
         if (technique == null) {
@@ -953,11 +979,11 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
      * <li>Set the {@link RenderState} to use for rendering. The render states are
      * applied in this order (later RenderStates override earlier RenderStates):<ol>
      * <li>{@link TechniqueDef#getRenderState() Technique Definition's RenderState}
-     * - i.e. specific renderstate that is required for the shader.</li>
+     * - i.e. specific RenderState that is required for the shader.</li>
      * <li>{@link #getAdditionalRenderState() Material Instance Additional RenderState}
-     * - i.e. ad-hoc renderstate set per model</li>
+     * - i.e. ad-hoc RenderState set per model</li>
      * <li>{@link RenderManager#getForcedRenderState() RenderManager's Forced RenderState}
-     * - i.e. renderstate requested by a {@link com.jme3.post.SceneProcessor} or
+     * - i.e. RenderState requested by a {@link com.jme3.post.SceneProcessor} or
      * post-processing filter.</li></ol>
      * <li>If the technique uses a shader, then the uniforms of the shader must be updated.<ul>
      * <li>Uniforms bound to material parameters are updated based on the current material parameter values.</li>
@@ -1040,6 +1066,7 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
         render(geom, geom.getWorldLightList(), rm);
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule oc = ex.getCapsule(this);
         oc.write(def.getAssetName(), "material_def", null);
@@ -1057,6 +1084,8 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
                 "]";
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
     public void read(JmeImporter im) throws IOException {
         InputCapsule ic = im.getCapsule(this);
 
@@ -1091,7 +1120,7 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
                 // Using SimpleTextured/SolidColor, just switch to Unshaded
                 defName = "Common/MatDefs/Misc/Unshaded.j3md";
             } else if (defName.equalsIgnoreCase("Common/MatDefs/Misc/WireColor.j3md")) {
-                // Using WireColor, set wireframe renderstate = true and use Unshaded
+                // Using WireColor, set wireframe render state = true and use Unshaded
                 getAdditionalRenderState().setWireframe(true);
                 defName = "Common/MatDefs/Misc/Unshaded.j3md";
             } else if (defName.equalsIgnoreCase("Common/MatDefs/Misc/Unshaded.j3md")) {
@@ -1105,7 +1134,7 @@ public class Material implements CloneableSmartAsset, Cloneable, Savable {
             assert applyDefaultValues && guessRenderStateApply;
         }
 
-        def = (MaterialDef) im.getAssetManager().loadAsset(new AssetKey(defName));
+        def = im.getAssetManager().loadAsset(new AssetKey<MaterialDef>(defName));
         paramValues = new ListMap<String, MatParam>();
 
         // load the textures and update nextTexUnit

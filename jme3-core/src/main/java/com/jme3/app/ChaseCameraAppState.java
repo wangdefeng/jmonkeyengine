@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -97,7 +97,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
         super.initialize(stateManager, app);
         this.inputManager = app.getInputManager();
         target = new Node("ChaseCamTarget");
-        camNode.setCamera(app.getCamera());        
+        camNode.setCamera(app.getCamera());
         camNode.setControlDir(CameraControl.ControlDirection.SpatialToCamera);
         target.attachChild(camNode);
         camNode.setLocalTranslation(0, 0, distance);
@@ -123,12 +123,13 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
         initVerticalAxisInputs();
         initZoomInput();
         initHorizontalAxisInput();
-        initTogleRotateInput();
+        initToggleRotateInput();
 
         inputManager.addListener(this, inputs);
         inputManager.setCursorVisible(dragToRotate);
     }
 
+    @Override
     public void onAction(String name, boolean keyPressed, float tpf) {
         if (isEnabled()) {
             if (dragToRotate) {
@@ -150,6 +151,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
 
     }
 
+    @Override
     public void onAnalog(String name, float value, float tpf) {
         if (isEnabled()) {
             if (canRotate) {
@@ -192,6 +194,8 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
 
     /**
      * move the camera toward or away the target
+     *
+     * @param value the distance to move
      */
     protected void zoomCamera(float value) {
         distance = FastMath.clamp(distance + value, minDistance, maxDistance);
@@ -219,13 +223,13 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
      * new MouseButtonTrigger(MouseInput.BUTTON_LEFT) left mouse button new
      * MouseButtonTrigger(MouseInput.BUTTON_RIGHT) right mouse button
      *
-     * @param triggers
+     * @param triggers the desired triggers
      */
     public void setToggleRotationTrigger(Trigger... triggers) {
         toggleRotateTrigger = triggers;
         if (inputManager != null) {
             inputManager.deleteMapping(CameraInput.CHASECAM_TOGGLEROTATE);
-            initTogleRotateInput();
+            initToggleRotateInput();
             inputManager.addListener(this, CameraInput.CHASECAM_TOGGLEROTATE);
         }
     }
@@ -234,7 +238,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
      * Sets custom triggers for zooming in the cam default is new
      * MouseAxisTrigger(MouseInput.AXIS_WHEEL, true) mouse wheel up
      *
-     * @param triggers
+     * @param triggers the desired triggers
      */
     public void setZoomInTrigger(Trigger... triggers) {
         zoomInTrigger = triggers;
@@ -249,7 +253,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
      * Sets custom triggers for zooming out the cam default is new
      * MouseAxisTrigger(MouseInput.AXIS_WHEEL, false) mouse wheel down
      *
-     * @param triggers
+     * @param triggers the desired triggers
      */
     public void setZoomOutTrigger(Trigger... triggers) {
         zoomOutTrigger = triggers;
@@ -272,11 +276,12 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
     /**
      * Sets the max zoom distance of the camera (default is 40)
      *
-     * @param maxDistance
+     * @param maxDistance the desired maximum distance (in world units,
+     * default=40)
      */
     public void setMaxDistance(float maxDistance) {
         this.maxDistance = maxDistance;
-        if(initialized){
+        if (initialized) {
             zoomCamera(distance);
         }
     }
@@ -284,7 +289,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
     /**
      * Returns the min zoom distance of the camera (default is 1)
      *
-     * @return minDistance
+     * @return the minimum distance (in world units)
      */
     public float getMinDistance() {
         return minDistance;
@@ -292,12 +297,13 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
 
     /**
      * Sets the min zoom distance of the camera (default is 1)
-     * 
-     * @param minDistance
+     *
+     * @param minDistance the desired minimum distance (in world units,
+     * default=1)
      */
     public void setMinDistance(float minDistance) {
         this.minDistance = minDistance;
-        if(initialized){
+        if (initialized) {
             zoomCamera(distance);
         }
     }
@@ -314,11 +320,12 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
      * Sets the maximal vertical rotation angle in radian of the camera around
      * the target. Default is Pi/2;
      *
-     * @param maxVerticalRotation
+     * @param maxVerticalRotation the desired maximum angle (in radians,
+     * default=Pi/2)
      */
     public void setMaxVerticalRotation(float maxVerticalRotation) {
         this.maxVerticalRotation = maxVerticalRotation;
-        if(initialized){
+        if (initialized) {
             rotateCamera();
         }
     }
@@ -336,11 +343,11 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
      * Sets the minimal vertical rotation angle in radian of the camera around
      * the target default is 0;
      *
-     * @param minHeight
+     * @param minHeight the desired minimum angle (in radians, default=0)
      */
     public void setMinVerticalRotation(float minHeight) {
         this.minVerticalRotation = minHeight;
-        if(initialized){
+        if (initialized) {
             rotateCamera();
         }
     }
@@ -374,8 +381,8 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
     }
 
     /**
-     * Sets the rotate amount when user moves his mouse, the lower the value,
-     * the slower the camera will rotate. default is 1.
+     * Sets the rotate amount when user moves his mouse. The lower the value,
+     * the slower the camera will rotate. Default is 1.
      *
      * @param rotationSpeed Rotation speed on mouse movement, default is 1.
      */
@@ -386,7 +393,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
     /**
      * Sets the default distance at start of application
      *
-     * @param defaultDistance
+     * @param defaultDistance the desired distance (in world units, default=20)
      */
     public void setDefaultDistance(float defaultDistance) {
         distance = defaultDistance;
@@ -396,7 +403,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
      * sets the default horizontal rotation in radian of the camera at start of
      * the application
      *
-     * @param angleInRad
+     * @param angleInRad the desired rotation (in radians, default=0)
      */
     public void setDefaultHorizontalRotation(float angleInRad) {
         horizontalRotation = angleInRad;
@@ -406,7 +413,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
      * sets the default vertical rotation in radian of the camera at start of
      * the application
      *
-     * @param angleInRad
+     * @param angleInRad the desired rotation (in radians, default=0)
      */
     public void setDefaultVerticalRotation(float angleInRad) {
         verticalRotation = angleInRad;
@@ -431,7 +438,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
     public void setDragToRotate(boolean dragToRotate) {
         this.dragToRotate = dragToRotate;
         this.canRotate = !dragToRotate;
-        if(inputManager != null){
+        if (inputManager != null) {
             inputManager.setCursorVisible(dragToRotate);
         }
     }
@@ -439,7 +446,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
     /**
      * invert the vertical axis movement of the mouse
      *
-     * @param invertYaxis
+     * @param invertYaxis true&rarr;inverted, false&rarr;not inverted
      */
     public void setInvertVerticalAxis(boolean invertYaxis) {
         this.invertYaxis = invertYaxis;
@@ -454,7 +461,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
     /**
      * invert the Horizontal axis movement of the mouse
      *
-     * @param invertXaxis
+     * @param invertXaxis true&rarr;inverted, false&rarr;not inverted
      */
     public void setInvertHorizontalAxis(boolean invertXaxis) {
         this.invertXaxis = invertXaxis;
@@ -491,7 +498,7 @@ public class ChaseCameraAppState extends AbstractAppState implements ActionListe
         inputManager.addMapping(CameraInput.CHASECAM_ZOOMOUT, zoomOutTrigger);
     }
 
-    private void initTogleRotateInput() {
+    private void initToggleRotateInput() {
         inputManager.addMapping(CameraInput.CHASECAM_TOGGLEROTATE, toggleRotateTrigger);
     }
 }

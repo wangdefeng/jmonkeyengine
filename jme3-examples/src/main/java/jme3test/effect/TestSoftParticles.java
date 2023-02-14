@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,6 @@ public class TestSoftParticles extends SimpleApplication {
 
     private boolean softParticles = true;
     private FilterPostProcessor fpp;
-    private TranslucentBucketFilter tbf;
     private Node particleNode;
 
     public static void main(String[] args) {
@@ -93,7 +92,7 @@ public class TestSoftParticles extends SimpleApplication {
         geom2.setLocalScale(0.1f, 0.2f, 1);
 
         fpp = new FilterPostProcessor(assetManager);        
-        tbf = new TranslucentBucketFilter(true);
+        TranslucentBucketFilter tbf = new TranslucentBucketFilter(true);
         fpp.addFilter(tbf);
         int samples = context.getSettings().getSamples();
         if (samples > 0) {
@@ -109,6 +108,7 @@ public class TestSoftParticles extends SimpleApplication {
         
         inputManager.addListener(new ActionListener() {
 
+            @Override
             public void onAction(String name, boolean isPressed, float tpf) {
                 if(isPressed && name.equals("toggle")){
                //     tbf.setEnabled(!tbf.isEnabled());     
@@ -125,6 +125,7 @@ public class TestSoftParticles extends SimpleApplication {
         
         // emit again
         inputManager.addListener(new ActionListener() {
+            @Override
             public void onAction(String name, boolean isPressed, float tpf) {
                 if(isPressed && name.equals("refire")) {
                     //fpp.removeFilter(tbf); // <-- add back in to fix

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 jMonkeyEngine
+ * Copyright (c) 2015-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,7 @@ public abstract class AbstractService<S extends ServiceManager> implements Servi
      *  Retrieves the first sibling service of the specified
      *  type.
      */   
+    @SuppressWarnings("unchecked")
     protected <T extends Service<S>> T getService( Class<T> type ) {
         return type.cast(serviceManager.getService(type));
     }    
@@ -82,7 +83,7 @@ public abstract class AbstractService<S extends ServiceManager> implements Servi
     
     /**
      *  Default implementation does nothing.  Implementations can
-     *  override this to peform custom startup behavior.
+     *  override this to perform custom startup behavior.
      */
     @Override
     public void start() {    
@@ -90,7 +91,7 @@ public abstract class AbstractService<S extends ServiceManager> implements Servi
     
     /**
      *  Default implementation does nothing.  Implementations can
-     *  override this to peform custom stop behavior.
+     *  override this to perform custom stop behavior.
      */
     @Override
     public void stop() {    
@@ -98,7 +99,7 @@ public abstract class AbstractService<S extends ServiceManager> implements Servi
     
     /**
      *  Default implementation does nothing.  Implementations can
-     *  override this to peform custom termination behavior.
+     *  override this to perform custom termination behavior.
      */
     @Override
     public void terminate( S serviceManager ) {

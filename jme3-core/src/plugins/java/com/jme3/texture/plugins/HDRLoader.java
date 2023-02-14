@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -113,10 +113,6 @@ public class HDRLoader implements AssetLoader {
         rgbf[2] = B * e;
     }
 
-    private short flip(int in){
-        return (short) ((in << 8 & 0xFF00) | (in >> 8));
-    }
-    
     private void writeRGBE(byte[] rgbe){
         if (writeRGBE){
             dataStore.put(rgbe);
@@ -140,7 +136,7 @@ public class HDRLoader implements AssetLoader {
     }
     
     private boolean decodeScanlineRLE(InputStream in, int width) throws IOException{
-        // must deocde RLE data into temp buffer before converting to float
+        // must decode RLE data into temp buffer before converting to float
         if (rleTempBuffer == null){
             rleTempBuffer = BufferUtils.createByteBuffer(width * 4);
         }else{
@@ -149,7 +145,7 @@ public class HDRLoader implements AssetLoader {
                 rleTempBuffer = BufferUtils.createByteBuffer(width * 4);
         }
         
-	// read each component separately
+        // read each component separately
         for (int i = 0; i < 4; i++) {
             // read WIDTH bytes for the channel
             for (int j = 0; j < width;) {
@@ -161,7 +157,7 @@ public class HDRLoader implements AssetLoader {
                         rleTempBuffer.put( (j++) * 4 + i , (byte)val);
                         //scanline[j++][i] = val;
                     }
-                } else {	// non-run
+                } else { // non-run
                     while ((code--) != 0) {
                         int val = in.read();
                         rleTempBuffer.put( (j++) * 4 + i, (byte)val);
@@ -222,7 +218,6 @@ public class HDRLoader implements AssetLoader {
     public Image load(InputStream in, boolean flipY) throws IOException{
         float gamma = -1f;
         float exposure = -1f;
-        float[] colorcorr = new float[]{ -1f, -1f, -1f };
 
         int width = -1, height = -1;
         boolean verifiedFormat = false;
@@ -313,6 +308,7 @@ public class HDRLoader implements AssetLoader {
         return new Image(pixelFormat, width, height, dataStore, ColorSpace.Linear);
     }
 
+    @Override
     public Object load(AssetInfo info) throws IOException {
         if (!(info.getKey() instanceof TextureKey))
             throw new IllegalArgumentException("Texture assets must be loaded using a TextureKey");

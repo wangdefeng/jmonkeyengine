@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ import com.jme3.math.Vector3f;
 import java.io.IOException;
 
 /**
- * <p>PhysicsJoint - Basic Phyiscs Joint</p>
+ * <p>PhysicsJoint - Basic Physics Joint</p>
  * @author normenhansen
  */
 public abstract class PhysicsJoint implements Savable {
@@ -50,10 +50,12 @@ public abstract class PhysicsJoint implements Savable {
     protected Vector3f pivotB;
     protected boolean collisionBetweenLinkedBodys = true;
 
-    public PhysicsJoint() {
+    protected PhysicsJoint() {
     }
 
     /**
+     * @param nodeA the body for the A end (not null, alias created)
+     * @param nodeB the body for the B end (not null, alias created)
      * @param pivotA local translation of the joint connection point in node A
      * @param pivotB local translation of the joint connection point in node B
      */
@@ -85,12 +87,12 @@ public abstract class PhysicsJoint implements Savable {
     }
 
     /**
-     * toggles collisions between linked bodys<br>
-     * joint has to be removed from and added to PhyiscsSpace to apply this.
-     * @param collisionBetweenLinkedBodys set to false to have no collisions between linked bodys
+     * toggles collisions between linked bodies<br>
+     * joint has to be removed from and added to PhysicsSpace to apply this.
+     * @param collisionBetweenLinkedBodies set to false to have no collisions between linked bodies
      */
-    public void setCollisionBetweenLinkedBodys(boolean collisionBetweenLinkedBodys) {
-        this.collisionBetweenLinkedBodys = collisionBetweenLinkedBodys;
+    public void setCollisionBetweenLinkedBodys(boolean collisionBetweenLinkedBodies) {
+        this.collisionBetweenLinkedBodys = collisionBetweenLinkedBodies;
     }
 
     public PhysicsRigidBody getBodyA() {
@@ -110,13 +112,14 @@ public abstract class PhysicsJoint implements Savable {
     }
 
     /**
-     * destroys this joint and removes it from its connected PhysicsRigidBodys joint lists
+     * destroys this joint and removes it from its connected PhysicsRigidBody's joint lists
      */
     public void destroy() {
         getBodyA().removeJoint(this);
         getBodyB().removeJoint(this);
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule capsule = ex.getCapsule(this);
         capsule.write(nodeA, "nodeA", null);
@@ -125,10 +128,11 @@ public abstract class PhysicsJoint implements Savable {
         capsule.write(pivotB, "pivotB", null);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule capsule = im.getCapsule(this);
-        this.nodeA = ((PhysicsRigidBody) capsule.readSavable("nodeA", new PhysicsRigidBody()));
-        this.nodeB = (PhysicsRigidBody) capsule.readSavable("nodeB", new PhysicsRigidBody());
+        this.nodeA = ((PhysicsRigidBody) capsule.readSavable("nodeA", null));
+        this.nodeB = (PhysicsRigidBody) capsule.readSavable("nodeB", null);
         this.pivotA = (Vector3f) capsule.readSavable("pivotA", new Vector3f());
         this.pivotB = (Vector3f) capsule.readSavable("pivotB", new Vector3f());
     }

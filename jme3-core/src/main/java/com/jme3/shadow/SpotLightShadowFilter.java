@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ import java.io.IOException;
  * This Filter does basically the same as a SpotLightShadowRenderer except it
  * renders the post shadow pass as a fullscreen quad pass instead of a geometry
  * pass. It's mostly faster than PssmShadowRenderer as long as you have more
- * than a about ten shadow receiving objects. The expense is the draw back that
+ * than about ten shadow receiving objects. The expense is the drawback that
  * the shadow Receive mode set on spatial is ignored. So basically all and only
  * objects that render depth in the scene receive shadows. See this post for
  * more details
@@ -62,7 +62,7 @@ public class SpotLightShadowFilter extends AbstractShadowFilter<SpotLightShadowR
      * int shadowMapSize)
      * instead.
      */
-    public SpotLightShadowFilter() {
+    protected SpotLightShadowFilter() {
         super();
     }
     
@@ -71,7 +71,7 @@ public class SpotLightShadowFilter extends AbstractShadowFilter<SpotLightShadowR
      *
      * @param assetManager the application asset manager
      * @param shadowMapSize the size of the rendered shadowmaps (512,1024,2048,
-     * etc...) the more quality, the less fps).
+     * etc...) The more quality, the fewer fps.
      */
     public SpotLightShadowFilter(AssetManager assetManager, int shadowMapSize) {
         super(assetManager, shadowMapSize, new SpotLightShadowRenderer(assetManager, shadowMapSize));

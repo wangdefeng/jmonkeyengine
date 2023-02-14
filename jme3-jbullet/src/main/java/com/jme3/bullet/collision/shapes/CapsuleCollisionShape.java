@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ public class CapsuleCollisionShape extends CollisionShape{
     protected float radius,height;
     protected int axis;
 
-    public CapsuleCollisionShape() {
+    protected CapsuleCollisionShape() {
     }
 
     /**
@@ -68,9 +68,11 @@ public class CapsuleCollisionShape extends CollisionShape{
 
     /**
      * Creates a capsule shape around the given axis (0=X,1=Y,2=Z).
-     * @param radius
-     * @param height
-     * @param axis
+     *
+     * @param radius the desired unscaled radius
+     * @param height the desired unscaled height of the cylindrical portion
+     * @param axis which local axis for the height: 0&rarr;X, 1&rarr;Y,
+     * 2&rarr;Z
      */
     public CapsuleCollisionShape(float radius, float height, int axis) {
         this.radius=radius;
@@ -91,6 +93,7 @@ public class CapsuleCollisionShape extends CollisionShape{
         return axis;
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule capsule = ex.getCapsule(this);
@@ -99,6 +102,7 @@ public class CapsuleCollisionShape extends CollisionShape{
         capsule.write(axis, "axis", 1);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule capsule = im.getCapsule(this);

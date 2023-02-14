@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -81,8 +81,8 @@ public class FluidSimHeightMap extends AbstractHeightMap {
      *                        the distance between each node of the heightmap
      * @param seed
      *            the seed to generate the same heightmap again
-     * @throws JmeException
-     *             if size of the terrain is not greater that zero, or number of
+     * @throws Exception
+     *             if size of the terrain is not greater than zero, or number of
      *             iterations is not greater that zero, or the minimum initial height
      *             is greater than the maximum (or the other way around)
      */
@@ -116,15 +116,15 @@ public class FluidSimHeightMap extends AbstractHeightMap {
      *            size the size of the terrain to be generated
      * @param iterations
      *            the number of iterations to do
-     * @throws JmeException
-     *             if size of the terrain is not greater that zero, or number of
-     *             iterations is not greater that zero
+     * @throws Exception
+     *             if size of the terrain is not greater than zero, or number of
+     *             iterations is not greater than zero
      */
     public FluidSimHeightMap(int size, int iterations) throws Exception {
         if (size <= 0 || iterations <= 0) {
             throw new Exception(
-                    "Either size of the terrain is not greater that zero, "
-                    + "or number of iterations is not greater that zero");
+                    "Either size of the terrain is not greater than zero, "
+                    + "or number of iterations is not greater than zero");
         }
 
         this.size = size;
@@ -134,10 +134,11 @@ public class FluidSimHeightMap extends AbstractHeightMap {
     }
 
 
-    /*
+    /**
      * Generates a heightmap using fluid simulation and the attributes set by
      * the constructor or the setters.
      */
+    @Override
     public boolean load() {
         // Clean up data if needed.
         if (null != heightData) {
@@ -211,7 +212,7 @@ public class FluidSimHeightMap extends AbstractHeightMap {
         // put the normalized heightmap into the range [0...255] and into the heightmap
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                heightData[x + y * size] = (float) (tempBuffer[curBuf][x + y * size]);
+                heightData[x + y * size] = tempBuffer[curBuf][x + y * size];
             }
         }
         normalizeTerrain(NORMALIZE_RANGE);
@@ -227,13 +228,13 @@ public class FluidSimHeightMap extends AbstractHeightMap {
 
     /**
      * Sets the number of times the fluid simulation should be iterated over
-     * the heightmap. The more often this is, the less features (hills, etc)
+     * the heightmap. The more iterations, the fewer features (hills, etcetera)
      * the terrain will have, and the smoother it will be.
      *
      * @param iterations
-     *            the number of iterations to do
-     * @throws JmeException
-     *             if iterations if not greater than zero
+     *            the number of iterations to perform
+     * @throws Exception
+     *             if iterations is not greater than zero
      */
     public void setIterations(int iterations) throws Exception {
         if (iterations <= 0) {
@@ -277,7 +278,7 @@ public class FluidSimHeightMap extends AbstractHeightMap {
 
     /**
      * Sets the time-speed between each iteration of the fluid
-     * simulation algortithm.
+     * simulation algorithm.
      *
      * @param timeStep
      *                       the time-step between each iteration
@@ -287,7 +288,7 @@ public class FluidSimHeightMap extends AbstractHeightMap {
     }
 
     /**
-     * Sets the viscosity of the simulated fuid.
+     * Sets the viscosity of the simulated fluid.
      *
      * @param viscosity
      *                      the viscosity of the fluid
@@ -297,7 +298,7 @@ public class FluidSimHeightMap extends AbstractHeightMap {
     }
 
     /**
-     * Sets the speed at which the waves trave.
+     * Sets the speed at which the waves travel.
      *
      * @param waveSpeed
      *                      the speed at which the waves travel

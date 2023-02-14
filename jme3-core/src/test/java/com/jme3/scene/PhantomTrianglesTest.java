@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 jMonkeyEngine
+ * Copyright (c) 2017-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,10 +41,12 @@ import com.jme3.material.plugins.J3MLoader;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.shape.Quad;
+import com.jme3.system.JmeSystem;
+import com.jme3.system.MockJmeSystemDelegate;
 import org.junit.Test;
 
 /**
- * Verify that collideWith() doesn't reports collisions with phantom triangles.
+ * Verify that collideWith() doesn't report collisions with phantom triangles.
  * This was issue #710 at GitHub.
  *
  * @author Stephen Gold
@@ -114,6 +116,7 @@ public class PhantomTrianglesTest {
 
     @Test
     public void testPhantomTriangles() {
+        JmeSystem.setSystemDelegate(new MockJmeSystemDelegate());
         assetManager = new DesktopAssetManager();
         assetManager.registerLocator(null, ClasspathLocator.class);
         assetManager.registerLoader(J3MLoader.class, "j3m", "j3md");

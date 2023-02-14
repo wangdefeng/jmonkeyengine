@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,21 +39,21 @@ import com.jme3.input.controls.JoyButtonTrigger;
  *  @author Paul Speed
  */
 public class DefaultJoystickButton implements JoystickButton {
-    
-    private InputManager inputManager;
-    private Joystick parent;
-    private int buttonIndex;
-    private String name;
-    private String logicalId;
 
-    public DefaultJoystickButton( InputManager inputManager, Joystick parent, int buttonIndex,
-                                  String name, String logicalId ) {
+    final private InputManager inputManager;
+    final private Joystick parent;
+    final private int buttonIndex;
+    final private String name;
+    final private String logicalId;
+
+    public DefaultJoystickButton(InputManager inputManager, Joystick parent, int buttonIndex,
+            String name, String logicalId) {
         this.inputManager = inputManager;
         this.parent = parent;
         this.buttonIndex = buttonIndex;
         this.name = name;
-        this.logicalId = logicalId;        
-    }                                   
+        this.logicalId = logicalId;
+    }
 
     /**
      * Assign the mapping name to receive events from the given button index
@@ -61,48 +61,53 @@ public class DefaultJoystickButton implements JoystickButton {
      *
      * @param mappingName The mapping to receive joystick button events.
      */
+    @Override
     public void assignButton(String mappingName) {
         inputManager.addMapping(mappingName, new JoyButtonTrigger(parent.getJoyId(), buttonIndex));
     }
-    
+
     /**
      *  Returns the joystick to which this axis object belongs.
      */
+    @Override
     public Joystick getJoystick() {
         return parent;
-    } 
+    }
 
     /**
      *  Returns the name of this joystick.
      *
      *  @return the name of this joystick.
      */
+    @Override
     public String getName() {
         return name;
-    } 
+    }
 
     /**
      *  Returns the logical identifier of this joystick axis.
      *
      *  @return the logical identifier of this joystick.
      */
+    @Override
     public String getLogicalId() {
         return logicalId;
-    } 
+    }
 
     /**
-     *  Returns the unique buttonId of this joystick axis within a given 
+     *  Returns the unique buttonId of this joystick axis within a given
      *  InputManager context.
      *
      *  @return the buttonId of this joystick axis.
      */
+    @Override
     public int getButtonId() {
         return buttonIndex;
     }
-     
+
     @Override
-    public String toString(){
-        return "JoystickButton[name=" + getName() + ", parent=" + parent.getName() + ", id=" + getButtonId() 
+    public String toString() {
+        return "JoystickButton[name=" + getName() + ", parent=" + parent.getName() + ", id=" + getButtonId()
                                     + ", logicalId=" + getLogicalId() + "]";
     }
 }

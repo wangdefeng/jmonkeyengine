@@ -1,7 +1,7 @@
 package com.jme3.scene.debug.custom;
 
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -80,6 +80,7 @@ public class ArmatureDebugger extends Node {
      *
      * @param name     the name of the debugger's node
      * @param armature the armature that will be shown
+     * @param deformingJoints a list of joints
      */
     public ArmatureDebugger(String name, Armature armature, List<Joint> deformingJoints) {
         super(name);
@@ -134,12 +135,12 @@ public class ArmatureDebugger extends Node {
 
         Material matWires = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         matWires.setBoolean("VertexColor", true);
-        matWires.getAdditionalRenderState().setLineWidth(3);
+        matWires.getAdditionalRenderState().setLineWidth(1f);
         wires.setMaterial(matWires);
 
         Material matOutline = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         matOutline.setBoolean("VertexColor", true);
-        matOutline.getAdditionalRenderState().setLineWidth(5);
+        matOutline.getAdditionalRenderState().setLineWidth(1f);
         outlines.setMaterial(matOutline);
 
         Material matOutline2 = new Material(assetManager, "Common/MatDefs/Misc/DashedLine.j3md");

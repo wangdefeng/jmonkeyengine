@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,13 +92,14 @@ public class TestCameraMotionPath extends SimpleApplication {
         rootNode.attachChild(camNode);
 
         guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
-        final BitmapText wayPointsText = new BitmapText(guiFont, false);
+        final BitmapText wayPointsText = new BitmapText(guiFont);
         wayPointsText.setSize(guiFont.getCharSet().getRenderedSize());
 
         guiNode.attachChild(wayPointsText);
 
         path.addListener(new MotionPathListener() {
 
+            @Override
             public void onWayPointReach(MotionEvent control, int wayPointIndex) {
                 if (path.getNbWayPoints() == wayPointIndex + 1) {
                     wayPointsText.setText(control.getSpatial().getName() + " Finish!!! ");
@@ -156,6 +157,7 @@ public class TestCameraMotionPath extends SimpleApplication {
         inputManager.addMapping("play_stop", new KeyTrigger(KeyInput.KEY_SPACE));
         ActionListener acl = new ActionListener() {
 
+            @Override
             public void onAction(String name, boolean keyPressed, float tpf) {
                 if (name.equals("display_hidePath") && keyPressed) {
                     if (active) {

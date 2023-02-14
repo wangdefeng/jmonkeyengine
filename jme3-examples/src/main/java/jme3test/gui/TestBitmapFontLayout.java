@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 20018 jMonkeyEngine
+ * Copyright (c) 2018-2021 jMonkeyEngine
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -84,10 +84,10 @@ public class TestBitmapFontLayout extends SimpleApplication {
     public static final float ZOOM_SPEED = 0.1f;
     public static final float SCROLL_SPEED = 50;
  
-    private Node testRoot = new Node("test root");
-    private Node scrollRoot = new Node("scroll root");
-    private Vector3f scroll = new Vector3f(0, 0, 0);
-    private Vector3f zoom = new Vector3f(0, 0, 0);
+    final private Node testRoot = new Node("test root");
+    final private Node scrollRoot = new Node("scroll root");
+    final private Vector3f scroll = new Vector3f(0, 0, 0);
+    final private Vector3f zoom = new Vector3f(0, 0, 0);
     
     public static void main(String[] args){
         TestBitmapFontLayout app = new TestBitmapFontLayout();
@@ -109,7 +109,7 @@ public class TestBitmapFontLayout extends SimpleApplication {
         }
     }
     
-    protected Texture renderAwtFont( TestConfig test, int width, int height, BitmapFont bitmapFont ) {
+    private Texture renderAwtFont( TestConfig test, int width, int height, BitmapFont bitmapFont ) {
  
         BitmapCharacterSet charset = bitmapFont.getCharSet();
           
@@ -156,7 +156,7 @@ public class TestBitmapFontLayout extends SimpleApplication {
         return new Texture2D(jmeImage);
     }
     
-    protected Node createVisual( TestConfig test ) {
+    private Node createVisual( TestConfig test ) {
         Node result = new Node(test.name);
         
         // For reasons I have trouble articulating, I want the visual's 0,0,0 to be
@@ -165,7 +165,7 @@ public class TestBitmapFontLayout extends SimpleApplication {
         // JME BitmapText (currently) renders from what it thinks the top of the letter is
         // down.  The actual bitmap text bounds may extend upwards... so we need to account
         // for that in any labeling we add above it.
-        // Thus we add and setup the main test text first.
+        // Thus we add and set up the main test text first.
 
         BitmapFont bitmapFont = assetManager.loadFont(test.jmeFont);
         BitmapCharacterSet charset = bitmapFont.getCharSet();
@@ -240,8 +240,8 @@ public class TestBitmapFontLayout extends SimpleApplication {
         float y1 = bb.getCenter().y - bb.getYExtent();
         float y2 = bb.getCenter().y + bb.getYExtent();
         System.out.println("xy1:" + x1 + ", " + y1 + "  xy2:" + x2 + ", " + y2);
-        int width = (int)Math.round(x2 - Math.min(0, x1));
-        int height = (int)Math.round(y2 - Math.min(0, y1)); 
+        int width = Math.round(x2 - Math.min(0, x1));
+        int height = Math.round(y2 - Math.min(0, y1)); 
         
         Texture awtText = renderAwtFont(test, width, height, bitmapFont);
         Quad quad = new Quad(width, height);
@@ -390,7 +390,7 @@ public class TestBitmapFontLayout extends SimpleApplication {
                                  loadTtf("/jme3test/font/DroidSansMono.ttf").deriveFont(Font.BOLD | Font.ITALIC, 32f)));
         */                                         
 
-        // Setup the test root node so that y = 0 is the top of the screen
+        // Set up the test root node so that y = 0 is the top of the screen
         testRoot.setLocalTranslation(0, cam.getHeight(), 0);
         testRoot.attachChild(scrollRoot);
         guiNode.attachChild(testRoot);
@@ -454,6 +454,7 @@ public class TestBitmapFontLayout extends SimpleApplication {
                                  ZOOM_IN, ZOOM_OUT);            
     }
  
+    @Override
     public void simpleUpdate( float tpf ) {
         if( scroll.lengthSquared() != 0 ) {
             scrollRoot.move(scroll.mult(tpf));
@@ -465,6 +466,7 @@ public class TestBitmapFontLayout extends SimpleApplication {
     }
  
     private class KeyStateListener implements ActionListener {  
+        @Override
         public void onAction(String name, boolean value, float tpf) {
             switch( name ) {
                 case RESET_VIEW:

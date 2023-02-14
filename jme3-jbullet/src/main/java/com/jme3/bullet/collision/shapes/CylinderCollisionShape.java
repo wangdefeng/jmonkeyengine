@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@ public class CylinderCollisionShape extends CollisionShape {
     protected Vector3f halfExtents;
     protected int axis;
 
-    public CylinderCollisionShape() {
+    protected CylinderCollisionShape() {
     }
 
     /**
@@ -90,11 +90,12 @@ public class CylinderCollisionShape extends CollisionShape {
      */
     @Override
     public void setScale(Vector3f scale) {
-    	 if (!scale.equals(Vector3f.UNIT_XYZ)) {
-    		 Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "CylinderCollisionShape cannot be scaled");
-    	 }
+        if (!scale.equals(Vector3f.UNIT_XYZ)) {
+            Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "CylinderCollisionShape cannot be scaled");
+        }
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule capsule = ex.getCapsule(this);
@@ -102,6 +103,7 @@ public class CylinderCollisionShape extends CollisionShape {
         capsule.write(axis, "axis", 1);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule capsule = im.getCapsule(this);

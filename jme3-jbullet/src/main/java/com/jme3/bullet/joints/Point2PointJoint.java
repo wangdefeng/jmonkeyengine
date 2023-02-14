@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,16 +44,18 @@ import java.io.IOException;
 /**
  * <i>From bullet manual:</i><br>
  * Point to point constraint, also known as ball socket joint limits the translation
- * so that the local pivot points of 2 rigidbodies match in worldspace.
- * A chain of rigidbodies can be connected using this constraint.
+ * so that the local pivot points of 2 rigid bodies match in worldspace.
+ * A chain of rigid bodies can be connected using this constraint.
  * @author normenhansen
  */
 public class Point2PointJoint extends PhysicsJoint {
 
-    public Point2PointJoint() {
+    protected Point2PointJoint() {
     }
 
     /**
+     * @param nodeA the body for the A end (not null, alias created)
+     * @param nodeB the body for the B end (not null, alias created)
      * @param pivotA local translation of the joint connection point in node A
      * @param pivotB local translation of the joint connection point in node B
      */

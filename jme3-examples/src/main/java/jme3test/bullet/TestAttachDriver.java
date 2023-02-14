@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,14 +60,13 @@ import com.jme3.texture.Texture;
 public class TestAttachDriver extends SimpleApplication implements ActionListener {
 
     private VehicleControl vehicle;
-    private RigidBodyControl driver;
     private RigidBodyControl bridge;
     private SliderJoint slider;
     private final float accelerationForce = 1000.0f;
     private final float brakeForce = 100.0f;
     private float steeringValue = 0;
     private float accelerationValue = 0;
-    private Vector3f jumpForce = new Vector3f(0, 3000, 0);
+    final private Vector3f jumpForce = new Vector3f(0, 3000, 0);
     private BulletAppState bulletAppState;
 
     public static void main(String[] args) {
@@ -202,7 +201,8 @@ public class TestAttachDriver extends SimpleApplication implements ActionListene
         //driver
         Node driverNode=new Node("driverNode");
         driverNode.setLocalTranslation(0,2,0);
-        driver=new RigidBodyControl(new BoxCollisionShape(new Vector3f(0.2f,.5f,0.2f)));
+        RigidBodyControl driver
+                = new RigidBodyControl(new BoxCollisionShape(new Vector3f(0.2f,.5f,0.2f)));
         driverNode.addControl(driver);
 
         rootNode.attachChild(driverNode);
@@ -244,17 +244,18 @@ public class TestAttachDriver extends SimpleApplication implements ActionListene
         cam.lookAt(vehicle.getPhysicsLocation(), Vector3f.UNIT_Y);
     }
 
+    @Override
     public void onAction(String binding, boolean value, float tpf) {
         if (binding.equals("Lefts")) {
             if (value) {
                 steeringValue += .5f;
             } else {
-                steeringValue += -.5f;
+                steeringValue -= .5f;
             }
             vehicle.steer(steeringValue);
         } else if (binding.equals("Rights")) {
             if (value) {
-                steeringValue += -.5f;
+                steeringValue -= .5f;
             } else {
                 steeringValue += .5f;
             }
@@ -274,8 +275,11 @@ public class TestAttachDriver extends SimpleApplication implements ActionListene
             }
         } else if (binding.equals("Space")) {
             if (value) {
-                getPhysicsSpace().remove(slider);
-                slider.destroy();
+                if (slider != null) {
+                    getPhysicsSpace().remove(slider);
+                    slider.destroy();
+                    slider = null;
+                }
                 vehicle.applyImpulse(jumpForce, Vector3f.ZERO);
             }
         } else if (binding.equals("Reset")) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2023 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,19 +59,34 @@ public class NullContext implements JmeContext, Runnable {
     protected SystemListener listener;
     protected NullRenderer renderer;
 
+    @Override
     public Type getType() {
         return Type.Headless;
     }
 
+    /**
+     * Accesses the listener that receives events related to this context.
+     *
+     * @return the pre-existing instance
+     */
+    @Override
+    public SystemListener getSystemListener() {
+        return listener;
+    }
+
+    @Override
     public void setSystemListener(SystemListener listener){
         this.listener = listener;
     }
 
     protected void initInThread(){
         logger.fine("NullContext created.");
-        logger.log(Level.FINE, "Running on thread: {0}", Thread.currentThread().getName());
+        if (logger.isLoggable(Level.FINE)) {
+            logger.log(Level.FINE, "Running on thread: {0}", Thread.currentThread().getName());
+        }
 
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
             public void uncaughtException(Thread thread, Throwable thrown) {
                 listener.handleError("Uncaught exception thrown in "+thread.toString(), thrown);
             }
@@ -126,6 +141,7 @@ public class NullContext implements JmeContext, Runnable {
         timeThen = timeNow;
     }
 
+    @Override
     public void run(){
         initInThread();
 
@@ -142,12 +158,14 @@ public class NullContext implements JmeContext, Runnable {
         logger.fine("NullContext destroyed.");
     }
 
+    @Override
     public void destroy(boolean waitFor){
         needClose.set(true);
         if (waitFor)
             waitFor(false);
     }
 
+    @Override
     public void create(boolean waitFor){
         if (created.get()){
             logger.warning("create() called when NullContext is already created!");
@@ -159,28 +177,35 @@ public class NullContext implements JmeContext, Runnable {
             waitFor(true);
     }
 
+    @Override
     public void restart() {
     }
 
+    @Override
     public void setAutoFlushFrames(boolean enabled){
     }
 
+    @Override
     public MouseInput getMouseInput() {
         return new DummyMouseInput();
     }
 
+    @Override
     public KeyInput getKeyInput() {
         return new DummyKeyInput();
     }
 
+    @Override
     public JoyInput getJoyInput() {
         return null;
     }
 
+    @Override
     public TouchInput getTouchInput() {
         return null;
     }
 
+    @Override
     public void setTitle(String title) {
     }
 
@@ -203,10 +228,12 @@ public class NullContext implements JmeContext, Runnable {
         }
     }
 
+    @Override
     public boolean isCreated(){
         return created.get();
     }
 
+    @Override
     public void setSettings(AppSettings settings) {
         this.settings.copyFrom(settings);
         frameRate = settings.getFrameRate();
@@ -214,18 +241,22 @@ public class NullContext implements JmeContext, Runnable {
             frameRate = 60; // use default update rate.
     }
 
+    @Override
     public AppSettings getSettings(){
         return settings;
     }
 
+    @Override
     public Renderer getRenderer() {
         return renderer;
     }
 
+    @Override
     public Timer getTimer() {
         return timer;
     }
 
+    @Override
     public boolean isRenderable() {
         return true; // Doesn't really matter if true or false. Either way
                      // RenderManager won't render anything.
@@ -234,5 +265,45 @@ public class NullContext implements JmeContext, Runnable {
     @Override
     public Context getOpenCLContext() {
         return null;
+    }
+
+    /**
+     * Returns the height of the framebuffer.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getFramebufferHeight() {
+        throw new UnsupportedOperationException("null context");
+    }
+
+    /**
+     * Returns the width of the framebuffer.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getFramebufferWidth() {
+        throw new UnsupportedOperationException("null context");
+    }
+
+    /**
+     * Returns the screen X coordinate of the left edge of the content area.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getWindowXPosition() {
+        throw new UnsupportedOperationException("null context");
+    }
+
+    /**
+     * Returns the screen Y coordinate of the top edge of the content area.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public int getWindowYPosition() {
+        throw new UnsupportedOperationException("null context");
     }
 }

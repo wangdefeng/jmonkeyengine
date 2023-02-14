@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Describes a material parameter. This is used for both defining a name and type
@@ -52,9 +53,14 @@ public class MatParam implements Savable, Cloneable {
     protected String name;
     protected String prefixedName;
     protected Object value;
+    protected boolean typeCheck = true;
 
     /**
      * Create a new material parameter. For internal use only.
+     *
+     * @param type the type of the parameter
+     * @param name the desired parameter name
+     * @param value the desired parameter value (alias created)
      */
     public MatParam(VarType type, String name, Object value) {
         this.type = type;
@@ -66,7 +72,23 @@ public class MatParam implements Savable, Cloneable {
     /**
      * Serialization only. Do not use.
      */
-    public MatParam() {
+    protected MatParam() {
+    }
+
+
+    public boolean isTypeCheckEnabled() {
+        return typeCheck;
+    }
+
+
+    /**
+     * Enable type check for this param.
+     * When type check is enabled a RuntimeException is thrown if 
+     * an object of the wrong type is passed to setValue.
+     * @param v (default = true)
+     */
+    public void setTypeCheckEnabled(boolean v) {
+        typeCheck = v;
     }
 
     /**
@@ -126,21 +148,36 @@ public class MatParam implements Savable, Cloneable {
      * @param value the value of this material parameter.
      */
     public void setValue(Object value) {
+        if (isTypeCheckEnabled()) {
+            if (value != null && this.type != null && this.type.getJavaType().length != 0) {
+                boolean valid = false;
+                for (Class<?> jtype : this.type.getJavaType()) {
+                    if (jtype.isAssignableFrom(value.getClass())) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if (!valid) {
+                    throw new RuntimeException("Trying to assign a value of type " + value.getClass() + " to " + this.getName() + " of type " + type.name() + ". Valid types are "
+                            + Arrays.deepToString(type.getJavaType()));
+                }
+            }
+        }
         this.value = value;
     }
 
 
     /**
      * Returns the material parameter value as it would appear in a J3M
-     * file. E.g.<br/>
-     * <code>
-     * MaterialParameters {<br/>
-     *     ABC : 1 2 3 4<br/>
-     * }<br/>
-     * </code>
+     * file. E.g.
+     * <pre>
+     * MaterialParameters {
+     *     ABC : 1 2 3 4
+     * }
+     * </pre>
      * Assuming "ABC" is a Vector4 parameter, then the value
      * "1 2 3 4" would be returned by this method.
-     * <br/><br/>
+     *
      * @return material parameter value as it would appear in a J3M file.
      */
     public String getValueAsString() {
@@ -152,7 +189,7 @@ public class MatParam implements Savable, Cloneable {
             case Vector2:
                 Vector2f v2 = (Vector2f) value;
                 return v2.getX() + " " + v2.getY();
-/* 
+/*
 This may get used at a later point of time
 When arrays can be inserted in J3M files
 
@@ -239,9 +276,9 @@ When arrays can be inserted in J3M files
                 TextureKey texKey = (TextureKey) texVal.getKey();
                 if (texKey == null){
                   //throw new UnsupportedOperationException("The specified MatParam cannot be represented in J3M");
-                    // this is used in toString and the above line causes blender materials to throw this exception. 
+                    // this is used in toString and the above line causes blender materials to throw this exception.
                     // toStrings should be very robust IMO as even debuggers often invoke toString and logging code
-                    // often does as well, even implicitly. 
+                    // often does as well, even implicitly.
                     return texVal+":returned null key";
                 }
 
@@ -276,13 +313,13 @@ When arrays can be inserted in J3M files
 
     private String getWrapMode(Texture texVal, Texture.WrapAxis axis) {
         WrapMode mode = WrapMode.EdgeClamp;
-        try{
+        try {
             mode = texVal.getWrap(axis);
-        }catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             //this axis doesn't exist on the texture
             return "";
         }
-        if(mode != WrapMode.EdgeClamp){
+        if (mode != WrapMode.EdgeClamp) {
             return"Wrap"+ mode.name() + "_" + axis.name() + " ";
         }
         return "";
@@ -298,6 +335,7 @@ When arrays can be inserted in J3M files
         }
     }
 
+    @Override
     public void write(JmeExporter ex) throws IOException {
         OutputCapsule oc = ex.getCapsule(this);
         oc.write(type, "varType", null);
@@ -318,8 +356,11 @@ When arrays can be inserted in J3M files
         } else if (value.getClass().isArray() && value instanceof Savable[]) {
             oc.write((Savable[]) value, "value_savable_array", null);
         }
+
+        oc.write(typeCheck, "typeCheck", true);
     }
 
+    @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule ic = im.getCapsule(this);
         type = ic.readEnum("varType", VarType.class, null);
@@ -374,6 +415,8 @@ When arrays can be inserted in J3M files
                 value = ic.readSavable("value_savable", null);
                 break;
         }
+
+        typeCheck = ic.readBoolean("typeCheck", true);
     }
 
     @Override

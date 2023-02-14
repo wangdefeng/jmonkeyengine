@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@ public class LightScatteringUI {
         System.out.println("-- Sample number : press Y to increase, H to decrease");
         System.out.println("-- blur start : press U to increase, J to decrease");
         System.out.println("-- blur width : press I to increase, K to decrease");
-        System.out.println("-- Light density : press O to increase, P to decrease");
+        System.out.println("-- Light density : press O to increase, L to decrease");
         System.out.println("-- Toggle LS on/off : press space bar");
         System.out.println("-------------------------------------------------------");
     
@@ -71,6 +71,7 @@ public class LightScatteringUI {
 
         ActionListener acl = new ActionListener() {
 
+            @Override
             public void onAction(String name, boolean keyPressed, float tpf) {
 
                 if (name.equals("sampleUp")) {
@@ -97,6 +98,7 @@ public class LightScatteringUI {
 
          AnalogListener anl = new AnalogListener() {
 
+            @Override
             public void onAnalog(String name, float value, float tpf) {
                
                 if (name.equals("blurStartUp")) {

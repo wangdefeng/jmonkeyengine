@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,13 +34,12 @@ package com.jme3.terrain.heightmap;
 import java.util.logging.Logger;
 
 /**
- * <code>CombinerHeightMap</code> generates a new height map based on
- * two provided height maps. These had maps can either be added together
+ * Generates a new height map based on
+ * two provided height maps. These maps can either be added together
  * or subtracted from each other. Each heightmap has a weight to
- * determine how much one will affect the other. By default it is set to
- * 0.5, 0.5 and meaning the two heightmaps are averaged evenly. This
- * value can be adjusted at will, as long as the two factors are equal
- * to 1.0.
+ * determine how much one will affect the other. By default, it is set to
+ * 0.5, 0.5, meaning the two heightmaps have equal weight. This
+ * value can be adjusted at will, as long as the two factors sum to 1.
  *
  * @author Mark Powell
  * @version $Id$
@@ -74,7 +73,7 @@ public class CombinerHeightMap extends AbstractHeightMap {
      * @param map2 the second heightmap to combine.
      * @param mode denotes whether to add or subtract the heightmaps, may
      *              be either ADDITION or SUBTRACTION.
-     * @throws JmeException if either map is null, their size
+     * @throws Exception if either map is null, their size
      *              do not match or the mode is invalid.
      */
     public CombinerHeightMap(
@@ -122,7 +121,7 @@ public class CombinerHeightMap extends AbstractHeightMap {
      * @param factor2 the factor for map2.
      * @param mode denotes whether to add or subtract the heightmaps, may
      *              be either ADDITION or SUBTRACTION.
-     * @throws JmeException if either map is null, their size
+     * @throws Exception if either map is null, their size
      *              do not match, the mode is invalid, or the factors do not add
      *              to 1.0.
      */
@@ -173,7 +172,7 @@ public class CombinerHeightMap extends AbstractHeightMap {
      * to 1.0.
      * @param factor1 the factor for map1.
      * @param factor2 the factor for map2.
-     * @throws JmeException if the factors do not add to 1.0.
+     * @throws Exception if the factors do not add to 1.0.
      */
     public void setFactors(float factor1, float factor2) throws Exception {
         if ((factor1 + factor2) != 1.0f) {
@@ -190,7 +189,7 @@ public class CombinerHeightMap extends AbstractHeightMap {
      * The size of the height maps must be the same.
      * @param map1 the first height map.
      * @param map2 the second height map.
-     * @throws JmeException if the either heightmap is null, or their
+     * @throws Exception if either height map is null, or their
      *              sizes do not match.
      */
     public void setHeightMaps(AbstractHeightMap map1, AbstractHeightMap map2) throws Exception {
@@ -213,7 +212,7 @@ public class CombinerHeightMap extends AbstractHeightMap {
      * <code>setMode</code> sets the mode of the combiner. This may either
      * be ADDITION or SUBTRACTION.
      * @param mode the mode of the combiner.
-     * @throws JmeException if mode is not ADDITION or SUBTRACTION.
+     * @throws Exception if mode is not ADDITION or SUBTRACTION.
      */
     public void setMode(int mode) throws Exception {
         if (mode != ADDITION && mode != SUBTRACTION) {
@@ -229,6 +228,7 @@ public class CombinerHeightMap extends AbstractHeightMap {
      *
      * @return boolean if the heightmap was successfully created.
      */
+    @Override
     public boolean load() {
         if (null != heightData) {
             unloadHeightMap();

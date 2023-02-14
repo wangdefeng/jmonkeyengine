@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine, Java Game Networking
+ * Copyright (c) 2009-2021 jMonkeyEngine, Java Game Networking
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,11 +50,12 @@ import java.util.logging.Logger;
  */
 public class FieldSerializer extends Serializer {
     
-    static final Logger log = Logger.getLogger(FieldSerializer.class.getName());
+    private static final Logger log = Logger.getLogger(FieldSerializer.class.getName());
 
     private static Map<Class, SavedField[]> savedFields = new HashMap<Class, SavedField[]>();
     private static Map<Class, Constructor> savedCtors = new HashMap<Class, Constructor>();
 
+    @SuppressWarnings("unchecked")
     protected void checkClass(Class clazz) {
     
         // See if the class has a public no-arg constructor
@@ -80,11 +81,12 @@ public class FieldSerializer extends Serializer {
         throw new RuntimeException( "Registration error: no-argument constructor not found on:" + clazz );  
     }        
     
+    @Override
     public void initialize(Class clazz) {
 
         checkClass(clazz);   
     
-        List<Field> fields = new ArrayList<Field>();
+        List<Field> fields = new ArrayList<>();
 
         Class processingClass = clazz;
         while (processingClass != Object.class ) {
@@ -92,11 +94,10 @@ public class FieldSerializer extends Serializer {
             processingClass = processingClass.getSuperclass();
         }
 
-        List<SavedField> cachedFields = new ArrayList<SavedField>(fields.size());
+        List<SavedField> cachedFields = new ArrayList<>(fields.size());
         for (Field field : fields) {
             int modifiers = field.getModifiers();
             if (Modifier.isTransient(modifiers)) continue;
-            if (Modifier.isFinal(modifiers)) continue;
             if (Modifier.isStatic(modifiers)) continue;
             if (field.isSynthetic()) continue;
             field.setAccessible(true);
@@ -108,7 +109,7 @@ public class FieldSerializer extends Serializer {
                 // The type of this field is implicit in the outer class
                 // definition and because the type is final, it can confidently
                 // be determined on the other end.
-                // Note: passing false to this method has the side-effect that field.getType()
+                // Note: passing false to this method has the side effect that field.getType()
                 // will be registered as a real class that can then be read/written
                 // directly as any other registered class.  It should be safe to take
                 // an ID like this because Serializer.initialize() is only called 
@@ -123,6 +124,7 @@ public class FieldSerializer extends Serializer {
         }
 
         Collections.sort(cachedFields, new Comparator<SavedField>() {
+            @Override
             public int compare (SavedField o1, SavedField o2) {
                     return o1.field.getName().compareTo(o2.field.getName());
             }
@@ -133,6 +135,7 @@ public class FieldSerializer extends Serializer {
     }
 
     @SuppressWarnings("unchecked")
+    @Override
     public <T> T readObject(ByteBuffer data, Class<T> c) throws IOException {
     
         // Read the null/non-null marker
@@ -143,7 +146,7 @@ public class FieldSerializer extends Serializer {
 
         T object;
         try {
-            Constructor<T> ctor = (Constructor<T>)savedCtors.get(c);
+            Constructor<T> ctor = savedCtors.get(c);
             object = ctor.newInstance();
         } catch (Exception e) {
             throw new SerializerException( "Error creating object of type:" + c, e );
@@ -171,6 +174,7 @@ public class FieldSerializer extends Serializer {
         return object;
     }
 
+    @Override
     public void writeObject(ByteBuffer buffer, Object object) throws IOException {
     
         // Add the null/non-null marker

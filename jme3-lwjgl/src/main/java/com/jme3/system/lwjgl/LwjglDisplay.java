@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2023 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,9 @@ import com.jme3.system.JmeContext.Type;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,14 +53,28 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
     private final AtomicBoolean needRestart = new AtomicBoolean(false);
     private PixelFormat pixelFormat;
 
+    /**
+     * @param width The required display width
+     * @param height The required display height
+     * @param bpp The required bits per pixel. If -1 is passed it will return
+     *           whatever bpp is found
+     * @param freq The required frequency, if -1 is passed it will return
+     *             whatever frequency is found
+     * @return The {@link DisplayMode} matches with specified settings or
+     *         return null if no matching display mode is found
+     */
     protected DisplayMode getFullscreenDisplayMode(int width, int height, int bpp, int freq){
         try {
             DisplayMode[] modes = Display.getAvailableDisplayModes();
             for (DisplayMode mode : modes) {
                 if (mode.getWidth() == width
                         && mode.getHeight() == height
-                        && (mode.getBitsPerPixel() == bpp || (bpp == 24 && mode.getBitsPerPixel() == 32))
-                        && (mode.getFrequency() == freq || (freq == 60 && mode.getFrequency() == 59))) {
+                        && (mode.getBitsPerPixel() == bpp || (bpp == 24 && mode.getBitsPerPixel() == 32) || bpp == -1)
+                        // Looks like AWT uses mathematical round to convert floating point
+                        // frequency values to int while lwjgl 2 uses mathematical floor.
+                        // For example if frequency is 59.83, AWT will return 60 but lwjgl2
+                        // will return 59. This is what I observed on Linux.  - Ali-RS 2023-1-10
+                        && (Math.abs(mode.getFrequency() - freq) <= 1 || freq == -1)) {
                     return mode;
                 }
             }
@@ -67,18 +84,25 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
         return null;
     }
 
+    @Override
     protected void createContext(AppSettings settings) throws LWJGLException{
         DisplayMode displayMode;
-        if (settings.getWidth() <= 0 || settings.getHeight() <= 0){
+        if (settings.getWidth() <= 0 || settings.getHeight() <= 0) {
             displayMode = Display.getDesktopDisplayMode();
             settings.setResolution(displayMode.getWidth(), displayMode.getHeight());
-        }else if (settings.isFullscreen()){
+        } else if (settings.isFullscreen()) {
             displayMode = getFullscreenDisplayMode(settings.getWidth(), settings.getHeight(),
-                                                   settings.getBitsPerPixel(), settings.getFrequency());
+                    settings.getBitsPerPixel(), settings.getFrequency());
             if (displayMode == null) {
-                throw new RuntimeException("Unable to find fullscreen display mode matching settings");
+                // Fall back to whatever mode is available at the specified width & height
+                displayMode = getFullscreenDisplayMode(settings.getWidth(), settings.getHeight(), -1, -1);
+                if (displayMode == null) {
+                    throw new RuntimeException("Unable to find fullscreen display mode matching settings");
+                } else {
+                    logger.log(Level.WARNING, "Unable to find fullscreen display mode matching settings, falling back to: {0}", displayMode);
+                }
             }
-        }else{
+        } else {
             displayMode = new DisplayMode(settings.getWidth(), settings.getHeight());
         }
 
@@ -99,7 +123,7 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
 
         boolean pixelFormatChanged = false;
         if (created.get() && (pixelFormat.getBitsPerPixel() != pf.getBitsPerPixel()
-        					||pixelFormat.getAlphaBits() != pf.getAlphaBits()
+                            ||pixelFormat.getAlphaBits() != pf.getAlphaBits()
                             ||pixelFormat.getDepthBits() != pf.getDepthBits()
                             ||pixelFormat.getStencilBits() != pf.getStencilBits()
                             ||pixelFormat.getSamples() != pf.getSamples())){
@@ -112,15 +136,11 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
         Display.setTitle(settings.getTitle());
         Display.setResizable(settings.isResizable());
         
-        if (displayMode != null) {
-            if (settings.isFullscreen()) {
-                Display.setDisplayModeAndFullscreen(displayMode);
-            } else {
-                Display.setFullscreen(false);
-                Display.setDisplayMode(displayMode);
-            }
+        if (settings.isFullscreen()) {
+            Display.setDisplayModeAndFullscreen(displayMode);
         } else {
-            Display.setFullscreen(settings.isFullscreen());
+            Display.setFullscreen(false);
+            Display.setDisplayMode(displayMode);
         }
 
         if (settings.getIcons() != null) {
@@ -155,6 +175,7 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
         }
     }
     
+    @Override
     protected void destroyContext(){
         try {
             renderer.cleanup();
@@ -165,6 +186,7 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
         }
     }
 
+    @Override
     public void create(boolean waitFor){
         if (created.get()){
             logger.warning("create() called when display is already created!");
@@ -178,7 +200,7 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
 
     @Override
     public void runLoop(){
-        // This method is overriden to do restart
+        // This method is overridden to do restart
         if (needRestart.getAndSet(false)) {
             try {
                 createContext(settings);
@@ -186,6 +208,11 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
                 logger.log(Level.SEVERE, "Failed to set display settings!", ex);
             }
             listener.reshape(settings.getWidth(), settings.getHeight());
+            if (renderable.get()) {
+                reinitContext();
+            } else {
+                assert getType() == Type.Canvas;
+            }
             logger.fine("Display restarted.");
         } else if (Display.wasResized()) {
             int newWidth = Display.getWidth();
@@ -206,10 +233,12 @@ public class LwjglDisplay extends LwjglAbstractDisplay {
         }
     }
 
+    @Override
     public Type getType() {
         return Type.Display;
     }
 
+    @Override
     public void setTitle(String title){
         if (created.get())
             Display.setTitle(title);

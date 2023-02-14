@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,7 @@ public class TestMultiViewsFilters extends SimpleApplication {
     }
     private boolean filterEnabled = true;
 
+    @Override
     public void simpleInitApp() {
         // create the geometry and attach it
         Geometry teaGeom = (Geometry) assetManager.loadModel("Models/Teapot/Teapot.obj");
@@ -149,7 +150,7 @@ public class TestMultiViewsFilters extends SimpleApplication {
         fpp.addFilter(rbf);
 
 
-        SSAOFilter f = new SSAOFilter(1.8899765f, 20.490374f, 0.4699998f, 0.1f);;
+        SSAOFilter f = new SSAOFilter(1.8899765f, 20.490374f, 0.4699998f, 0.1f);
         fpp4.addFilter(f);
         SSAOUI ui = new SSAOUI(inputManager, f);
         
@@ -165,6 +166,7 @@ public class TestMultiViewsFilters extends SimpleApplication {
 
         inputManager.addListener(new ActionListener() {
 
+            @Override
             public void onAction(String name, boolean isPressed, float tpf) {
                 if (name.equals("press") && isPressed) {
                     if (filterEnabled) {

@@ -2,6 +2,9 @@
 #ifndef PI
     #define PI 3.14159265358979323846264
 #endif
+#ifndef NB_PROBES
+    #define NB_PROBES 0
+#endif
 
 //Specular fresnel computation
 vec3 F_Shlick(float vh,	vec3 F0){
@@ -52,7 +55,7 @@ float PBR_ComputeDirectLight(vec3 normal, vec3 lightDir, vec3 viewDir,
    
     float alpha = roughness * roughness;
 
-    //D, GGX normaal Distribution function     
+    //D, GGX normal Distribution function
     float alpha2 = alpha * alpha;
     float sum  = ((ndoth * ndoth) * (alpha2 - 1.0) + 1.0);
     float denom = PI * sum * sum;
@@ -61,7 +64,7 @@ float PBR_ComputeDirectLight(vec3 normal, vec3 lightDir, vec3 viewDir,
     // Compute Fresnel function via Schlick's approximation.
     vec3 fresnel = F_Shlick(hdotv, fZero);
     
-    //G Shchlick GGX Gometry shadowing term,  k = alpha/2
+    //G Schlick GGX Geometry shadowing term,  k = alpha/2
     float k = alpha * 0.5;
 
  /*   
@@ -73,7 +76,7 @@ float PBR_ComputeDirectLight(vec3 normal, vec3 lightDir, vec3 viewDir,
     float specular =(D* fresnel * G) /(4 * ndotv);
    */
  
-    // UE4 way to optimise shlick GGX Gometry shadowing term
+    // UE4 way to optimise Schlick GGX Geometry shadowing term
     //http://graphicrants.blogspot.co.uk/2013/08/specular-brdf-reference.html
     float G_V = ndotv + sqrt( (ndotv - ndotv * k) * ndotv + k );
     float G_L = ndotl + sqrt( (ndotl - ndotl * k) * ndotl + k );    
@@ -143,8 +146,9 @@ float renderProbe(vec3 viewDir, vec3 worldPos, vec3 normal, vec3 norm, float Rou
 
     if(lightProbeData[0][3] != 0.0){
         // oriented box probe
-        mat3 wToLocalRot = mat3(lightProbeData);
-        wToLocalRot = inverse(wToLocalRot);
+        // mat3_sub our compat wrapper for mat3(mat4)
+        mat3 wToLocalRot = inverse(mat3_sub(lightProbeData));
+
         vec3 scale = vec3(lightProbeData[0][3], lightProbeData[1][3], lightProbeData[2][3]);
         #if NB_PROBES >= 2
             // probe blending
@@ -175,7 +179,7 @@ float renderProbe(vec3 viewDir, vec3 worldPos, vec3 normal, vec3 norm, float Rou
 
     } else {
         // spherical probe
-        // paralax fix
+        // parallax fix
         rv = invRadius * direction + rv;
 
         #if NB_PROBES >= 2

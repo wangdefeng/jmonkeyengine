@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ import java.util.logging.Logger;
  * 
  * In addition, this test shows how to use {@link ProgramCache}.
  * 
- * @author shaman
+ * @author shaman 
  */
 public class TestWriteToTexture extends SimpleApplication implements AnalogListener, ActionListener {
     private static final Logger LOG = Logger.getLogger(TestWriteToTexture.class.getName());
@@ -61,7 +61,6 @@ public class TestWriteToTexture extends SimpleApplication implements AnalogListe
     private int initCounter;
     private Context clContext;
     private CommandQueue clQueue;
-    private ProgramCache programCache;
     private Kernel kernel;
     private Vector2f C;
     private Image texCL;
@@ -72,7 +71,7 @@ public class TestWriteToTexture extends SimpleApplication implements AnalogListe
         AppSettings settings = new AppSettings(true);
         settings.setOpenCLSupport(true);
         settings.setVSync(false);
-//        settings.setRenderer(AppSettings.JOGL_OPENGL_FORWARD_COMPATIBLE);
+        settings.setRenderer(AppSettings.LWJGL_OPENGL2);
         app.setSettings(settings);
         app.start(); // start the game
     }
@@ -123,7 +122,7 @@ public class TestWriteToTexture extends SimpleApplication implements AnalogListe
     private void initOpenCL1() {
         clContext = context.getOpenCLContext();
         clQueue = clContext.createQueue().register();
-        programCache = new ProgramCache(clContext);
+        ProgramCache programCache = new ProgramCache(clContext);
         //create kernel
         String cacheID = getClass().getName()+".Julia";
         Program program = programCache.loadFromCache(cacheID);
@@ -142,9 +141,9 @@ public class TestWriteToTexture extends SimpleApplication implements AnalogListe
         texCL = clContext.bindImage(tex, MemoryAccess.WRITE_ONLY).register();
     }
     private void updateOpenCL(float tpf) {
-        //aquire resource
+        //acquire resource
         texCL.acquireImageForSharingNoEvent(clQueue);
-        //no need to wait for the returned event, since the kernel implicitely waits for it (same command queue)
+        //no need to wait for the returned event, since the kernel implicitly waits for it (same command queue)
         
         //execute kernel
         Kernel.WorkSize ws = new Kernel.WorkSize(settings.getWidth(), settings.getHeight());

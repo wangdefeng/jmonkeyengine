@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018 jMonkeyEngine
+ * Copyright (c) 2009-2020 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -84,7 +84,7 @@ public class Sphere extends Mesh {
     /**
      * Serialization only. Do not use.
      */
-    public Sphere() {
+    protected Sphere() {
     }
 
     /**
@@ -337,7 +337,7 @@ public class Sphere extends Mesh {
             }
         }
 
-        // south pole triangles
+        // south-pole triangles
         for (int i = 0; i < radialSamples; i++, index += 3) {
             if (!interior) {
                 idxBuf.put((short) i);
@@ -350,7 +350,7 @@ public class Sphere extends Mesh {
             }
         }
 
-        // north pole triangles
+        // north-pole triangles
         int iOffset = (zSamples - 3) * (radialSamples + 1);
         for (int i = 0; i < radialSamples; i++, index += 3) {
             if (!interior) {
@@ -402,9 +402,10 @@ public class Sphere extends Mesh {
         setStatic();
     }
 
-    public void read(JmeImporter e) throws IOException {
-        super.read(e);
-        InputCapsule capsule = e.getCapsule(this);
+    @Override
+    public void read(JmeImporter importer) throws IOException {
+        super.read(importer);
+        InputCapsule capsule = importer.getCapsule(this);
         zSamples = capsule.readInt("zSamples", 0);
         radialSamples = capsule.readInt("radialSamples", 0);
         radius = capsule.readFloat("radius", 0);
@@ -413,6 +414,7 @@ public class Sphere extends Mesh {
         interior = capsule.readBoolean("interior", false);
     }
 
+    @Override
     public void write(JmeExporter e) throws IOException {
         super.write(e);
         OutputCapsule capsule = e.getCapsule(this);

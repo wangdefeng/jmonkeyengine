@@ -13,6 +13,7 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.terrain.geomipmap.TerrainGrid;
 import com.jme3.terrain.geomipmap.TerrainGridListener;
@@ -25,7 +26,7 @@ import java.io.File;
 public class TerrainGridSerializationTest extends SimpleApplication {
 
     private TerrainGrid terrain;
-    private boolean usePhysics = true;
+    final private boolean usePhysics = true;
 
     public static void main(final String[] args) {
         TerrainGridSerializationTest app = new TerrainGridSerializationTest();
@@ -37,7 +38,9 @@ public class TerrainGridSerializationTest extends SimpleApplication {
     public void simpleInitApp() {
         File file = new File("TerrainGridTestData.zip");
         if (!file.exists()) {
-            assetManager.registerLocator("http://jmonkeyengine.googlecode.com/files/TerrainGridTestData.zip", HttpZipLocator.class);
+            assetManager.registerLocator(
+                    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/jmonkeyengine/TerrainGridTestData.zip",
+                    HttpZipLocator.class);
         } else {
             assetManager.registerLocator("TerrainGridTestData.zip", ZipLocator.class);
         }
@@ -58,6 +61,7 @@ public class TerrainGridSerializationTest extends SimpleApplication {
         stateManager.attach(bulletAppState);
 
         this.getCamera().setLocation(new Vector3f(0, 256, 0));
+        cam.setRotation(new Quaternion(-0.0075f, 0.949784f, -0.312f, -0.0227f));
 
         this.viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
 
@@ -74,9 +78,11 @@ public class TerrainGridSerializationTest extends SimpleApplication {
 
             terrain.addListener(new TerrainGridListener() {
 
+                @Override
                 public void gridMoved(Vector3f newCenter) {
                 }
 
+                @Override
                 public void tileAttached(Vector3f cell, TerrainQuad quad) {
                     //workaround for bugged test j3o's
                     while(quad.getControl(RigidBodyControl.class)!=null){
@@ -86,6 +92,7 @@ public class TerrainGridSerializationTest extends SimpleApplication {
                     bulletAppState.getPhysicsSpace().add(quad);
                 }
 
+                @Override
                 public void tileDetached(Vector3f cell, TerrainQuad quad) {
                     if (quad.getControl(RigidBodyControl.class) != null) {
                         bulletAppState.getPhysicsSpace().remove(quad);

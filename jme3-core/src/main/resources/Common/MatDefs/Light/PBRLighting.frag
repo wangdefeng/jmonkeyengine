@@ -134,10 +134,12 @@ void main(){
         vec4 albedo = Color;
     #endif
 
+    //ao in r channel, roughness in green channel, metallic in blue channel!
+    vec3 aoRoughnessMetallicValue = vec3(1.0, 1.0, 0.0);
     #ifdef USE_PACKED_MR
-        vec2 rm = texture2D(m_MetallicRoughnessMap, newTexCoord).gb;
-        float Roughness = rm.x * max(m_Roughness, 1e-4);
-        float Metallic = rm.y * max(m_Metallic, 0.0);
+        aoRoughnessMetallicValue = texture2D(m_MetallicRoughnessMap, newTexCoord).rgb;
+        float Roughness = aoRoughnessMetallicValue.g * max(m_Roughness, 1e-4);
+        float Metallic = aoRoughnessMetallicValue.b * max(m_Metallic, 0.0);
     #else
         #ifdef ROUGHNESSMAP
             float Roughness = texture2D(m_RoughnessMap, newTexCoord).r * max(m_Roughness, 1e-4);
@@ -165,7 +167,7 @@ void main(){
     #if defined(NORMALMAP)
       vec4 normalHeight = texture2D(m_NormalMap, newTexCoord);
       //Note the -2.0 and -1.0. We invert the green channel of the normal map, 
-      //as it's complient with normal maps generated with blender.
+      //as it's compliant with normal maps generated with blender.
       //see http://hub.jmonkeyengine.org/forum/topic/parallax-mapping-fundamental-bug/#post-256898
       //for more explanation.
       vec3 normal = normalize((normalHeight.xyz * vec3(2.0, NORMAL_TYPE * 2.0, 2.0) - vec3(1.0, NORMAL_TYPE * 1.0, 1.0)));
@@ -224,6 +226,9 @@ void main(){
        specularColor.rgb *= lightMapColor;
     #endif
 
+    #if defined(AO_PACKED_IN_MR_MAP) && defined(USE_PACKED_MR)
+       ao = aoRoughnessMetallicValue.rrr;
+    #endif
 
     float ndotv = max( dot( normal, viewDir ),0.0);
     for( int i = 0;i < NB_LIGHTS; i+=3){

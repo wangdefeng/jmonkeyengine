@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019 jMonkeyEngine
+ * Copyright (c) 2009-2021 jMonkeyEngine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      * <code>unloadHeightMap</code> clears the data of the height map. This
      * insures it is ready for reloading.
      */
+    @Override
     public void unloadHeightMap() {
         heightData = null;
     }
@@ -81,6 +82,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      * @param scale
      *            the scale to multiply height values by.
      */
+    @Override
     public void setHeightScale(float scale) {
         heightScale = scale;
     }
@@ -97,6 +99,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      * @param z
      *            the z (north/south) coordinate.
      */
+    @Override
     public void setHeightAtPoint(float height, int x, int z) {
         heightData[x + (z * size)] = height;
     }
@@ -109,9 +112,10 @@ public abstract class AbstractHeightMap implements HeightMap {
      *            the new size of the terrain.
      * @throws Exception 
      *
-     * @throws JmeException
+     * @throws Exception
      *             if the size is less than or equal to zero.
      */
+    @Override
     public void setSize(int size) throws Exception {
         if (size <= 0) {
             throw new Exception("size must be greater than zero.");
@@ -127,10 +131,10 @@ public abstract class AbstractHeightMap implements HeightMap {
      *
      * @param filter
      *            the erosion value.
-     * @throws Exception 
-     * @throws JmeException
+     * @throws Exception
      *             if filter is less than 0 or greater than 1.
      */
+    @Override
     public void setMagnificationFilter(float filter) throws Exception {
         if (filter < 0 || filter >= 1) {
             throw new Exception("filter must be between 0 and 1");
@@ -148,6 +152,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      *            the z (north/south) coordinate.
      * @return the value at (x,z).
      */
+    @Override
     public float getTrueHeightAtPoint(int x, int z) {
         //logger.fine( heightData[x + (z*size)]);
         return heightData[x + (z * size)];
@@ -163,6 +168,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      *            the z (north/south) coordinate.
      * @return the scaled value at (x, z).
      */
+    @Override
     public float getScaledHeightAtPoint(int x, int z) {
         return ((heightData[x + (z * size)]) * heightScale);
     }
@@ -177,6 +183,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      *            the y coordinate of the point.
      * @return the interpolated height at this point.
      */
+    @Override
     public float getInterpolatedHeight(float x, float z) {
         float low, highX, highZ;
         float intX, intZ;
@@ -210,6 +217,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      *
      * @return the grid of height data.
      */
+    @Override
     public float[] getHeightMap() {
         return heightData;
     }
@@ -218,6 +226,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      * Build a new array of height data with the scaled values.
      * @return a new array
      */
+    @Override
     public float[] getScaledHeightMap() {
         float[] hm = new float[heightData.length];
         for (int i=0; i<heightData.length; i++) {
@@ -232,6 +241,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      *
      * @return the size of a single side.
      */
+    @Override
     public int getSize() {
         return size;
     }
@@ -243,9 +253,7 @@ public abstract class AbstractHeightMap implements HeightMap {
      * @param filename
      *            the file name to save the current data as.
      * @return true if the save was successful, false otherwise.
-     * @throws Exception 
-     *
-     * @throws JmeException
+     * @throws Exception
      *             if filename is null.
      */
     public boolean save(String filename) throws Exception {
@@ -300,7 +308,7 @@ public abstract class AbstractHeightMap implements HeightMap {
         currentMin = heightData[0];
         currentMax = heightData[0];
 
-        //find the min/max values of the height fTemptemptempBuffer
+        //find the min/max values of the height data
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 if (heightData[i + j * size] > currentMax) {
@@ -318,7 +326,7 @@ public abstract class AbstractHeightMap implements HeightMap {
 
         height = currentMax - currentMin;
 
-        //scale the values to a range of 0-255
+        //scale the values to a range of 0-value
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 heightData[i + j * size] = ((heightData[i + j * size] - currentMin) / height) * value;
@@ -428,21 +436,21 @@ public abstract class AbstractHeightMap implements HeightMap {
             }
         }
 
-        // re-normalize back to its oraginal height range
+        // re-normalize back to its original height range
         float height = minmax[1] - minmax[0];
         normalizeTerrain(height);
     }
 
     /**
-     * Smooth the terrain. For each node, its 8 neighbors heights
-     * are averaged and will participate in the  node new height
-     * by a factor <code>np</code> between 0 and 1
+     * Smooth the terrain. For each node, its 8 neighbors' heights
+     * are averaged and will influence node's new height
+     * to the extent specified by <code>np</code>.
      * 
      * You must first load() the heightmap data before this will have any effect.
      * 
      * @param np
-     *          The factor to what extend the neighbors average has an influence.
-     *          Value of 0 will ignore neighbors (no smoothing)
+     *          To what extent neighbors influence the new height:
+     *          Value of 0 will ignore neighbors (no smoothing).
      *          Value of 1 will ignore the node old height.
      */
     public void smooth(float np) {
@@ -450,15 +458,15 @@ public abstract class AbstractHeightMap implements HeightMap {
     }
     
     /**
-     * Smooth the terrain. For each node, its X(determined by radius) neighbors heights
-     * are averaged and will participate in the  node new height
-     * by a factor <code>np</code> between 0 and 1
+     * Smooth the terrain. For each node, its X (determined by radius) neighbors' heights
+     * are averaged and will influence node's new height
+     * to the extent specified by <code>np</code>.
      *
      * You must first load() the heightmap data before this will have any effect.
      * 
      * @param np
-     *          The factor to what extend the neighbors average has an influence.
-     *          Value of 0 will ignore neighbors (no smoothing)
+     *          To what extent neighbors influence the new height:
+     *          Value of 0 will ignore neighbors (no smoothing).
      *          Value of 1 will ignore the node old height.
      */
     public void smooth(float np, int radius) {
